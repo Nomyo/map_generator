@@ -9,74 +9,71 @@ void wait_key(void)
 	return;
 }
 
-void display_bmp(std::string file_name, SDL_Surface* screen)
+void wait_window_close(void)
 {
-  SDL_Surface *image;
-  SDL_Surface *image_displayed;
-
-  /* Load the BMP file into a surface */
-  image = SDL_LoadBMP(file_name.c_str());
-  if (image == NULL)
+  SDL_Event evenements;
+  while(true)
   {
-    std::cerr << "Couldn't load " << file_name << " ;"
-	      << SDL_GetError() << std::endl;
-    return;
+    SDL_WaitEvent(&evenements);
+
+    if(evenements.window.event == SDL_WINDOWEVENT_CLOSE)
+      break;
   }
-
-  /*
-   * Palettized screen modes will have a default palette (a standard
-   * 8*8*4 colour cube), but if the image is palettized as well we can
-   * use that palette for a nicer colour matching
-   */
-  if (image->format->palette && screen->format->palette) {
-    SDL_SetColors(screen, image->format->palette->colors, 0,
-		  image->format->palette->ncolors);
-  }
-
-  image_displayed = SDL_DisplayFormat(image);
-
-  /* Blit onto the screen surface */
-  if(SDL_BlitSurface(image_displayed, NULL, screen, NULL) < 0)
-    std::cerr << "BlitSurface error: " << SDL_GetError() << std::endl;
-
-  SDL_UpdateRect(screen, 0, 0, image_displayed->w, image_displayed->h);
-  SDL_Flip(screen);
-
-  /* Free the allocated BMP surface */
-  SDL_FreeSurface(image);
 }
 
-SDL_Surface *screen_init(void)
+void display_bmp(std::string file_name, SDL_Window* window)
 {
+   SDL_Surface *image;
+   auto screen = SDL_GetWindowSurface(window);
 
-  SDL_Surface *screen = NULL;
+   /* Load the BMP file into a surface */
+   image = SDL_LoadBMP(file_name.c_str());
+   if (image == NULL)
+   {
+     std::cerr << "Couldn't load " << file_name << " ;"
+	       << SDL_GetError() << std::endl;
+     return;
+   }
 
-  /* Initialize the SDL library */
-  if(SDL_Init(SDL_INIT_VIDEO) < 0 )
+   SDL_BlitSurface(image, NULL, screen, NULL); // blit it to the screen
+   SDL_FreeSurface(image);
+   SDL_UpdateWindowSurface(window);
+}
+
+SDL_Window *window_init(void)
+{
+  SDL_Window *window = NULL;
+
+  // Initialization
+  if(SDL_Init(SDL_INIT_VIDEO) < 0)
   {
-    std::cerr << "Couldn't initialize SDL: " << SDL_GetError() << std::endl;
-    exit(1);
+    std::cout << "Initialization failed : " << SDL_GetError() << std::endl;
+    SDL_Quit();
+    return nullptr;
   }
 
-  /* Clean up on exit */
-  atexit(SDL_Quit);
+  // OpenGL version
+  SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+  SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
 
-  /*
-   * Initialize the display in a 640x480 8-bit palettized mode,
-   * requesting a software surface
-   */
-  /* Have a preference for 8-bit, but accept any depth */
-  screen = SDL_SetVideoMode(1280, 720, 8, SDL_SWSURFACE | SDL_ANYFORMAT);
-  if (screen == NULL )
+  // Double Buffer
+  SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+  SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
+
+  window = SDL_CreateWindow("Need title",
+			     SDL_WINDOWPOS_CENTERED,
+			     SDL_WINDOWPOS_CENTERED, 1280, 720,
+			     SDL_WINDOW_SHOWN | SDL_WINDOW_OPENGL);
+
+  if(window == 0)
   {
-    std::cerr << "Couldn't set 640x480x8 video mode: " << SDL_GetError()
-	      << std::endl;
-    exit(1);
+    std::cout << "Could not create the window : " << SDL_GetError() << std::endl;
+    SDL_Quit();
+
+    return nullptr;
   }
 
-  std::cout << "Set 640x480 at " << screen->format->BitsPerPixel
-	    << "bits-per-pixel mode" << std::endl;
-  return screen;
+  return window;
 }
 
 std::shared_ptr<SDL_Surface> create_surface(int width, int height)
@@ -144,11 +141,12 @@ void put_pixel_color(std::shared_ptr<SDL_Surface> surface,
   }
 }
 
-void display_surface(std::shared_ptr<SDL_Surface> surface, SDL_Surface* screen)
+void display_surface(std::shared_ptr<SDL_Surface> surface, SDL_Window* window)
 {
+  auto screen = SDL_GetWindowSurface(window);
+
   if(SDL_BlitSurface(surface.get(), NULL, screen, NULL) < 0)
     std::cerr << "BlitSurface error: " << SDL_GetError() << std::endl;
 
-  SDL_UpdateRect(screen, 0, 0, surface->w, surface->h);
-  SDL_Flip(screen);
+  SDL_UpdateWindowSurface(window);
 }

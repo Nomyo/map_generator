@@ -1,6 +1,6 @@
 #pragma once
 
-#include <SDL/SDL.h>
+#include <SDL2/SDL.h>
 #include <iostream>
 #include <memory>
 
@@ -10,16 +10,21 @@
 void wait_key(void);
 
 /**
+ * Wait until window is closed
+ */
+void wait_window_close(void);
+
+/**
  * Load and display a bmp image
  * @param filename should be the relative path to the file
  */
-void display_bmp(std::string file_name, SDL_Surface* screen);
+void display_bmp(std::string file_name, SDL_Window* window);
 
 /**
- * Init and return an SDL_Surface
- * For now hard coded 640 x 480
+ * Init and return an SDL_Window
+ * For now hard coded 1280 x 720
  */
-SDL_Surface *screen_init(void);
+SDL_Window *window_init(void);
 
 /**
  * Create an SDL_Surface with the specified size
@@ -38,4 +43,4 @@ void put_pixel_color(std::shared_ptr<SDL_Surface> surface,
  * Set the pixel color of a the surface at [i][j]
  * @param pixel: set to this pixel color
  */
-void display_surface(std::shared_ptr<SDL_Surface> surface, SDL_Surface* screen);
+void display_surface(std::shared_ptr<SDL_Surface> surface, SDL_Window* window);
