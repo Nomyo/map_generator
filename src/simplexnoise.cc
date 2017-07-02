@@ -1,4 +1,4 @@
-#include <simplexnoise.h>
+#include <simplexnoise.hh>
 
 // unsigned char SimplexNoise::permutation[512] = {151,160,137,91,90,15,
 //   31,3,01,5,6,3,94,33,100,225,40,6,03,0,9,42,5,99,7,40,1,0,3,

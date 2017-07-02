@@ -1,6 +1,9 @@
 #pragma once
 
+#include <GL/gl.h>
+#include <GL/glu.h>
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_image.h>
 #include <iostream>
 #include <memory>
 
@@ -44,3 +47,14 @@ void put_pixel_color(std::shared_ptr<SDL_Surface> surface,
  * @param pixel: set to this pixel color
  */
 void display_surface(std::shared_ptr<SDL_Surface> surface, SDL_Window* window);
+
+
+/**
+ * Flip the surface
+ */
+SDL_Surface *flip_surface(SDL_Surface *surface);
+
+/**
+ * Helper to load texture from a file
+ */
+GLuint load_texture(const char *filename, bool useMipMap = true);
