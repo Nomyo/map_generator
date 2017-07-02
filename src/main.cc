@@ -6,7 +6,7 @@
 
 #include <simplexnoise.hh>
 #include <utils.hh>
-#include <freefly.hh>
+#include <camera.hh>
 
 #define FPS 50
 
@@ -36,7 +36,7 @@ void do_noise(SDL_Window *window)
     display_surface(surf, window);
 }
 
-void DrawGL(FreeFlyCamera* camera, SDL_Window *window)
+void DrawGL(Camera* camera, SDL_Window *window)
 {
 
     glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
@@ -68,10 +68,10 @@ void DrawGL(FreeFlyCamera* camera, SDL_Window *window)
     SDL_GL_SwapWindow(window);
 }
 
-void loop(FreeFlyCamera *camera, SDL_Window *window)
+void loop(Camera *camera, SDL_Window *window)
 {
     SDL_Event event;
-    const Uint32 time_per_frame = 1000/FPS;
+    const Uint32 time_per_frame = 1000 / FPS;
     Uint32 last_time,current_time,elapsed_time;
     Uint32 stop_time;
 
@@ -93,17 +93,17 @@ void loop(FreeFlyCamera *camera, SDL_Window *window)
 		    return;
 		    break;
 		default :
-		    camera->OnKeyboard(event.key);
+		    camera->on_keyboard(event.key);
 		}
 		break;
 	    case SDL_KEYUP:
-		camera->OnKeyboard(event.key);
+		camera->on_keyboard(event.key);
 		break;
 	    case SDL_MOUSEMOTION:
-		camera->OnMouseMotion(event.motion);
+		camera->on_mouse_motion(event.motion);
 		break;
 	    case SDL_MOUSEWHEEL:
-		camera->OnMouseWheel(event.wheel);
+		camera->on_mouse_wheel(event.wheel);
 		break;
 	    }
 	}
@@ -139,11 +139,11 @@ int main(int argc, char *argv[])
 	return -1;
     }
 
-    //load_textures();
+    // load_textures();
     // do_noise(window);
     // wait_window_close();
 
-    auto camera = new FreeFlyCamera(glm::vec3{0, 0, 2});
+    auto camera = new Camera(glm::vec3{0, 0, 2});
 
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();

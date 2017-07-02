@@ -6,7 +6,7 @@ LDFLAGS = -lGLEW -lglfw3 -lGL -lm -ldl -lXinerama \
 
 DIR = src
 SOURCE = $(DIR)/utils.cc $(DIR)/simplexnoise.cc $(DIR)/main.cc \
-	 $(DIR)/freefly.cc
+	 $(DIR)/camera.cc
 
 INC_DIR = inc/
 OBJ = $(SOURCE:%.cc=%.o)
