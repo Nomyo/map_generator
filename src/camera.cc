@@ -1,153 +1,134 @@
 #include <camera.hh>
 
-#include <cmath>
-#include <GL/glu.h>
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_image.h>
-#include <SDL2/SDL_mouse.h>
-#include <iostream>
-
-Camera::Camera(const glm::vec3& position)
+Camera::Camera(const glm::vec3& position, const glm::vec3& up)
+    : position_(position)
+    , target_(glm::vec3(0.0f, 0.0f, -1.0f))
+    , up_(up)
 {
-    position_ = position;
-    phi_ = 0;
-    theta_ = 0;
-    compute_vect_from_angles();
-
-    speed_ = 0.01;
-    sensivity_ = 0.2;
-    vertical_motion_active_ = false;
-
-    keyconf_["forward"] = SDLK_z;
-    keyconf_["backward"] = SDLK_s;
-    keyconf_["strafe_left"] = SDLK_q;
-    keyconf_["strafe_right"] = SDLK_d;
-    keyconf_["boost"] = SDLK_LSHIFT;
-
-    keystates_[keyconf_["forward"]] = false;
-    keystates_[keyconf_["backward"]] = false;
-    keystates_[keyconf_["strafe_left"]] = false;
-    keystates_[keyconf_["strafe_right"]] = false;
-    keystates_[keyconf_["boost"]] = false;
-
-    SDL_SetRelativeMouseMode(SDL_TRUE);
-    SDL_ShowCursor(SDL_DISABLE);
+    world_up_ = glm::vec3(0.0f, 1.0f, 0.0f);
+    update_vectors();
 }
 
-void Camera::on_mouse_motion(const SDL_MouseMotionEvent& event)
+Camera::Camera(const glm::vec3& position, const glm::vec3& up,
+	       float yaw, float pitch)
+    : position_(position)
+    , target_(glm::vec3(0.0f, 0.0f, -1.0f))
+    , up_(up)
+    , yaw_(yaw)
+    , pitch_(pitch)
 {
-    theta_ -= event.xrel * sensivity_;
-    phi_ -= event.yrel * sensivity_;
-    compute_vect_from_angles();
+    world_up_ = glm::vec3(0.0f, 1.0f, 0.0f);
+    update_vectors();
 }
 
-void Camera::on_mouse_wheel(const SDL_MouseWheelEvent& event)
+Camera::Camera(float posX, float posY, float posZ, float upX, float upY,
+	       float upZ, float yaw, float pitch)
+    : target_(glm::vec3(0.0f, 0.0f, -1.0f))
+    , yaw_(yaw)
+    , pitch_(pitch)
 {
-    if (event.y >= 0)
+    position_ = glm::vec3(posX, posY, posZ);
+    world_up_ = glm::vec3(upX, upY, upZ);
+    update_vectors();
+}
+
+glm::mat4 Camera::get_view_matrix()
+{
+    return glm::lookAt(position_, position_ + target_, up_);
+}
+float Camera::get_zoom()
+{
+    return zoom_;
+}
+
+void Camera::boosted(float factor)
+{
+    boost_factor_ = factor;
+}
+
+void Camera::process_keyboard(Camera_movement dir, float delta_time)
+{
+    float velocity = movement_speed_ * boost_factor_ * delta_time;
+
+    if (dir == Camera_movement::FORWARD)
+	position_ += target_ * velocity;
+    if (dir == Camera_movement::BACKWARD)
+	position_ -= target_ * velocity;
+    if (dir == Camera_movement::LEFT)
+	position_ -= right_ * velocity;
+    if (dir == Camera_movement::RIGHT)
+	position_ += right_ * velocity;
+    if (dir == Camera_movement::UP)
+	position_ += world_up_ * velocity;
+    if (dir == Camera_movement::DOWN)
+	position_ -= world_up_ * velocity;
+}
+
+void Camera::process_mouse_scroll(float yoffset)
+{
+    if (zoom_ >= 1.0f && zoom_ <= 45.0f)
+	zoom_ -= yoffset;
+    else if (zoom_ < 1.0f)
+	zoom_ = 1.0f;
+    else if (zoom_ > 45.0f)
+	zoom_ = 45.0f;
+}
+
+void Camera::process_mouse_movement(float xoffset, float yoffset,
+				    GLboolean constrain_pitch)
+{
+    xoffset *= mouse_sensitivity_;
+    yoffset *= mouse_sensitivity_;
+
+    yaw_   += xoffset;
+    pitch_ += yoffset;
+
+    // Make sure that when pitch is out of bounds, screen doesn't get flipped
+    if (constrain_pitch)
     {
-        vertical_motion_active_ = true;
-        timeout_vertical_motion_ = 250;
-        vertical_motion_direction_ = 1;
-
-    }
-    else if (event.y < 0)
-    {
-        vertical_motion_active_ = true;
-        timeout_vertical_motion_ = 250;
-        vertical_motion_direction_ = -1;
-    }
-}
-
-void Camera::on_keyboard(const SDL_KeyboardEvent& event)
-{
-    for (auto it = keystates_.begin(); it != keystates_.end(); it++)
-    {
-        if (event.keysym.sym == it->first)
-        {
-            it->second = (event.type == SDL_KEYDOWN);
-            break;
-        }
-    }
-}
-
-void Camera::animate(Uint32 timestep)
-{
-    float realspeed = (keystates_[keyconf_["boost"]])?10*speed_:speed_;
-    if (keystates_[keyconf_["forward"]])
-        position_ += forward_ * (realspeed * timestep);
-    if (keystates_[keyconf_["backward"]])
-        position_ -= forward_ * (realspeed * timestep);
-    if (keystates_[keyconf_["strafe_left"]])
-        position_ += left_ * (realspeed * timestep);
-    if (keystates_[keyconf_["strafe_right"]])
-        position_ -= left_ * (realspeed * timestep);
-    if (vertical_motion_active_)
-    {
-        if (timestep > timeout_vertical_motion_)
-            vertical_motion_active_ = false;
-        else
-            timeout_vertical_motion_ -= timestep;
-        position_ += glm::vec3(0,0,
-			       vertical_motion_direction_ *  realspeed * timestep);
+	if (pitch_ > 89.0f)
+	    pitch_ = 89.0f;
+	else if (pitch_ < -89.0f)
+	    pitch_ = -89.0f;
     }
 
-    target_ = position_ + forward_;
+    update_vectors();
 }
 
-void Camera::set_speed(float speed)
+void Camera::update_vectors()
 {
-    speed_ = speed;
+    glm::vec3 front;
+    front.x = cos(glm::radians(yaw_)) * cos(glm::radians(pitch_));
+    front.y = sin(glm::radians(pitch_));
+    front.z = sin(glm::radians(yaw_)) * cos(glm::radians(pitch_));
+    target_ = glm::normalize(front);
+
+    right_ = glm::normalize(glm::cross(target_, world_up_));
+
+    // Normalize the vectors, because their length gets closer to 0
+    // the more you look up or down which results in slower movement.
+    up_ = glm::normalize(glm::cross(right_, target_));
 }
 
-void Camera::set_sensivity(float sensivity)
+void Camera::print_debug()
 {
-    sensivity_ = sensivity;
-}
+    std::cout << "position: " << position_.x << " "
+	      << position_.y << " "
+	      << position_.z << " "
+	      << std::endl;
 
-void Camera::set_position(const glm::vec3& position)
-{
-    position_ = position;
-    target_ = position_ + forward_;
-}
+    std::cout << "target: " << target_.x << " "
+	      << target_.y << " "
+	      << target_.z << " "
+	      << std::endl;
 
-void Camera::compute_vect_from_angles()
-{
-    static const glm::vec3 global_up(0,0,1);
+    std::cout << "up: " << up_.x << " "
+	      << up_.y << " "
+	      << up_.z << " "
+	      << std::endl;
 
-    if (phi_ > 89)
-        phi_ = 89;
-    else if (phi_ < -89)
-        phi_ = -89;
-    float r_temp = cos(phi_*M_PI/180);
-    forward_.z = sin(phi_*M_PI/180);
-    forward_.x = r_temp*cos(theta_*M_PI/180);
-    forward_.y = r_temp*sin(theta_*M_PI/180);
-
-    left_ = glm::normalize(glm::cross(global_up, forward_));
-    target_ = position_ + forward_;
-}
-
-void Camera::look()
-{
-    gluLookAt(position_.x,position_.y,position_.z,
-              target_.x,target_.y,target_.z,
-              0, 0, 1);
-}
-
-void Camera::debug()
-{
-    std::cout << "position : " << std::endl;
-    std::cout << "x = " << position_.x << std::endl;
-    std::cout << "y = " << position_.y << std::endl;
-    std::cout << "z = " << position_.z << std::endl;
-
-    std::cout << "target : " << std::endl;
-    std::cout << "x = " << target_.x << std::endl;
-    std::cout << "y = " << target_.y << std::endl;
-    std::cout << "z = " << target_.z << std::endl;
-}
-
-Camera::~Camera()
-{
-    SDL_SetRelativeMouseMode(SDL_FALSE);
+    std::cout << "right: " << right_.x << " "
+	      << right_.y << " "
+	      << right_.z << " "
+	      << std::endl;
 }

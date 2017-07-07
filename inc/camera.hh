@@ -1,55 +1,58 @@
 #pragma once
 
-#include <SDL2/SDL.h>
-
+#include <glad/glad.h>
 #include <glm/glm.hpp>
-#include <glm/gtx/transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
-#include <map>
-#include <string>
+#include <iostream>
 
 class Camera
 {
+
 public:
-    Camera(const glm::vec3& position);
+    enum class Camera_movement
+    {
+	FORWARD,
+	BACKWARD,
+	LEFT,
+	RIGHT,
+	UP,
+	DOWN
+     };
 
-    virtual void on_mouse_motion(const SDL_MouseMotionEvent& event);
-    virtual void on_mouse_wheel(const SDL_MouseWheelEvent& event);
-    virtual void on_keyboard(const SDL_KeyboardEvent& event);
+public:
+    Camera(const glm::vec3& position = glm::vec3(0.0f, 0.0f, 0.0f),
+	   const glm::vec3& up = glm::vec3(0.0f, 1.0f, 0.0f));
+    Camera(float posX, float posY, float posZ, float upX, float upY, float upZ,
+	   float yaw, float pitch);
+    Camera(const glm::vec3& position, const glm::vec3& up,
+	   float yaw, float pitch);
+    virtual ~Camera() = default;
 
-    virtual void animate(Uint32 timestep);
-    virtual void set_speed(float speed);
-    virtual void set_sensivity(float sensivity);
-    virtual void set_position(const glm::vec3& position);
-
-    virtual void look(void);
-    virtual void debug(void);
-
-    virtual ~Camera();
+    virtual glm::mat4 get_view_matrix();
+    virtual float get_zoom();
+    virtual void boosted(float factor);
+    virtual void process_keyboard(Camera_movement dir, float delta_time);
+    virtual void process_mouse_scroll(float yoffset);
+    virtual void process_mouse_movement(float xoffset, float yoffset,
+					GLboolean constrain_pitch = true);
+    virtual void print_debug();
 
 protected:
-    using KeyStates = std::map<SDL_Keycode, bool>;
-    using KeyConf = std::map<std::string, SDL_Keycode>;
+    void update_vectors();
 
-    float speed_;
-    float sensivity_;
-
-    //vertical motion stuffs
-    Uint32 timeout_vertical_motion_;
-    bool vertical_motion_active_;
-    int vertical_motion_direction_;
-
-    KeyStates keystates_;
-    KeyConf keyconf_;
-
+protected:
     glm::vec3 position_;
     glm::vec3 target_;
-    glm::vec3 forward_;
-    glm::vec3 left_;
+    glm::vec3 up_;
+    glm::vec3 right_;
+    glm::vec3 world_up_;
 
-    float theta_;
-    float phi_;
+    float yaw_   = -90.0f;
+    float pitch_ = 0.0f;
 
-    void compute_vect_from_angles(void);
+    float movement_speed_     = 2.5f;
+    float boost_factor_       = 1.0f;
+    float mouse_sensitivity_  = 0.1f;
+    float zoom_               = 45.0f;
 };

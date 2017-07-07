@@ -5,15 +5,17 @@ LDFLAGS = -lGLEW -lglfw3 -lGL -lm -ldl -lXinerama \
 	-lglut -lSDL2_image -lGL -lGLU
 
 DIR = src
-SOURCE = $(DIR)/utils.cc $(DIR)/simplexnoise.cc $(DIR)/main.cc \
-	 $(DIR)/camera.cc
+SOURCE = $(DIR)/glad.c $(DIR)/utils.cc $(DIR)/simplexnoise.cc $(DIR)/main.cc \
+	 $(DIR)/camera.cc $(DIR)/stb_image.cc \
+	$(DIR)/input.cc $(DIR)/opengl-utils.cc $(DIR)/shader_m.cc
 
 INC_DIR = inc/
 OBJ = $(SOURCE:%.cc=%.o)
+OBJc = $(SOURCE:%.c=%.o)
 
 EXECUTABLE = bin
 
-all: $(OBJ) $(EXECUTABLE)
+all: $(OBJc) $(OBJ) $(EXECUTABLE)
 
 $(EXECUTABLE):
 	$(CXX) $(CXXFLAGS) -o $@ $(OBJ) $(LDFLAGS)
@@ -21,5 +23,7 @@ $(EXECUTABLE):
 %.o: %.cc
 	$(CXX) $(CXXFLAGS) -c $< -o $@ -I$(INC_DIR)
 
+%.o: %.c
+	$(CXX) $(CXXFLAGS) -c $< -o $@ -I$(INC_DIR)
 clean:
-	$(RM) $(OBJ) $(EXECUTABLE)
+	$(RM) $(DIR)/*.o $(EXECUTABLE)
