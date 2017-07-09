@@ -6,7 +6,7 @@ LDFLAGS = -lGLEW -lglfw3 -lGL -lm -ldl -lXinerama \
 
 DIR = src
 SOURCE = $(DIR)/glad.c $(DIR)/utils.cc $(DIR)/simplexnoise.cc $(DIR)/main.cc \
-	 $(DIR)/camera.cc $(DIR)/stb_image.cc \
+	 $(DIR)/camera.cc $(DIR)/stb_image.cc $(DIR)/mesh.cc \
 	$(DIR)/input.cc $(DIR)/opengl-utils.cc $(DIR)/shader_m.cc
 
 INC_DIR = inc/

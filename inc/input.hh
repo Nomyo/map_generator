@@ -29,8 +29,8 @@ private:
 
 public:
     // FIXME SHOULD BE HANDLE IN OTHER CLASS
-    static constexpr unsigned int SCR_WIDTH = 800;
-    static constexpr unsigned int SCR_HEIGHT = 600;
+    static constexpr unsigned int SCR_WIDTH = 1600;
+    static constexpr unsigned int SCR_HEIGHT = 900;
 
     static float lastX_;
     static float lastY_;

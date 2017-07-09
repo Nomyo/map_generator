@@ -31,9 +31,9 @@ void Input::process_input(GLFWwindow *window)
 	glfwSetWindowShouldClose(window, true);
 
     if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
-	camera->boosted(5.0f);
+	camera->boosted(100.0f);
     else
-	camera->boosted(1.0);
+	camera->boosted(50.0);
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
 	camera->process_keyboard(Camera::Camera_movement::FORWARD, deltaTime);
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
@@ -71,6 +71,6 @@ void Input::scroll_callback(GLFWwindow* window, double xoffset,
 			    double yoffset)
 {
     auto camera = get_instance().get_camera();
-    std::cout << "scroll" << std::endl;
+
     camera->process_mouse_scroll(yoffset);
 }
