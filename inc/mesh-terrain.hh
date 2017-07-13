@@ -2,6 +2,7 @@
 
 #include <glad/glad.h>
 #include <glm/glm.hpp>
+#include <stb_image.h>
 #include <glm/gtc/matrix_transform.hpp>
 
 #include <iostream>
@@ -13,23 +14,28 @@ struct Vertex
 {
     glm::vec3 position;
     glm::vec3 color;
+    glm::vec2 texture_coord;
 };
 
-class MeshColor
+class MeshTerrain
 {
 public:
-    MeshColor(std::vector<Vertex> vertices, std::vector<unsigned int> indices);
-    ~MeshColor();
+    MeshTerrain(std::vector<Vertex> vertices, std::vector<unsigned int> indices);
+    ~MeshTerrain();
 
     void draw(Shader shader);
     std::vector<Vertex> get_vertices();
+    unsigned int get_texture_id();
 
 private:
     void setup_mesh();
+    void prepare_texture();
 
 private:
     std::vector<Vertex> vertices_;
     std::vector<unsigned int> indices_;
+
+    unsigned int texture_id_;
 
     unsigned int VBO_;
     unsigned int EBO_;

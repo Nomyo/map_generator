@@ -1,6 +1,6 @@
 #pragma once
 
-#include <mesh-color.hh>
+#include <mesh-terrain.hh>
 #include <entity.hh>
 #include <simplexnoise.hh>
 
@@ -18,7 +18,7 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 /**
  * Perform perlin noise and build a mesh with it
  */
-MeshColor create_mesh_from_noise();
+MeshTerrain create_mesh_from_noise();
 
 /**
  * Fill up and entity for now randomly with trees

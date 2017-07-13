@@ -11,7 +11,7 @@ SOURCE = \
 	$(DIR)/simplexnoise.cc 		\
 	$(DIR)/camera.cc		\
 	$(DIR)/stb_image.cc		\
-	$(DIR)/mesh-color.cc 		\
+	$(DIR)/mesh-terrain.cc 		\
 	$(DIR)/input.cc			\
 	$(DIR)/opengl-utils.cc		\
 	$(DIR)/shader_m.cc 		\

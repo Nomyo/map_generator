@@ -5,7 +5,7 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
     glViewport(0, 0, width, height);
 }
 
-MeshColor create_mesh_from_noise()
+MeshTerrain create_mesh_from_noise()
 {
     SimplexNoise noise_generator;
     std::vector<Vertex> vertices;
@@ -77,7 +77,7 @@ MeshColor create_mesh_from_noise()
 	}
 
 	vertices.emplace_back(
-	    Vertex{glm::vec3(x, (p_noise / 2.0f) * 0.5f , z), color});
+	    Vertex{glm::vec3(x, (p_noise / 2.0f) * 0.5f , z), color, glm::vec2{x, z}});
 	}
     }
 
@@ -95,7 +95,7 @@ MeshColor create_mesh_from_noise()
 	}
     }
 
-    MeshColor m(vertices, indices);
+    MeshTerrain m(vertices, indices);
     return m;
 }
 

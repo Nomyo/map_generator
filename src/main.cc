@@ -14,7 +14,7 @@
 #include <shader_m.hh>
 #include <stb_image.h>
 #include <utils.hh>
-#include <mesh-color.hh>
+#include <mesh-terrain.hh>
 #include <mesh-texture.hh>
 #include <main.hh>
 #include <model.hh>
@@ -86,7 +86,7 @@ int start_opengl()
     Shader our_model_shader("shaders/model.vs", "shaders/model.fs");
 
     // Mesh & Model
-    MeshColor map_mesh = create_mesh_from_noise();
+    MeshTerrain map_mesh = create_mesh_from_noise();
 
     //Entity
     auto map_vertices = map_mesh.get_vertices();
@@ -94,7 +94,7 @@ int start_opengl()
 
     our_map_shader.use();
 
-    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
     while (!glfwWindowShouldClose(window))
     {
