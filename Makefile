@@ -2,12 +2,23 @@ CXX = g++
 CXXFLAGS = -Wall -std=c++14 -pedantic -g
 LDFLAGS = -lGLEW -lglfw3 -lGL -lm -ldl -lXinerama \
 	-lXrandr -lXi -lXcursor -lX11 -lXxf86vm -lpthread -lSDL2main -lSDL2 \
-	-lglut -lSDL2_image -lGL -lGLU
+	-lglut -lSDL2_image -lGL -lGLU -lassimp
 
 DIR = src
-SOURCE = $(DIR)/glad.c $(DIR)/utils.cc $(DIR)/simplexnoise.cc $(DIR)/main.cc \
-	 $(DIR)/camera.cc $(DIR)/stb_image.cc $(DIR)/mesh.cc \
-	$(DIR)/input.cc $(DIR)/opengl-utils.cc $(DIR)/shader_m.cc
+SOURCE = \
+	$(DIR)/glad.c 			\
+	$(DIR)/utils.cc			\
+	$(DIR)/simplexnoise.cc 		\
+	$(DIR)/camera.cc		\
+	$(DIR)/stb_image.cc		\
+	$(DIR)/mesh-color.cc 		\
+	$(DIR)/input.cc			\
+	$(DIR)/opengl-utils.cc		\
+	$(DIR)/shader_m.cc 		\
+	$(DIR)/entity.cc		\
+	$(DIR)/model.cc			\
+	$(DIR)/entity-renderer.cc	\
+	$(DIR)/main.cc
 
 INC_DIR = inc/
 OBJ = $(SOURCE:%.cc=%.o)
@@ -27,3 +38,5 @@ $(EXECUTABLE):
 	$(CXX) $(CXXFLAGS) -c $< -o $@ -I$(INC_DIR)
 clean:
 	$(RM) $(DIR)/*.o $(EXECUTABLE)
+
+.PHONY: clean

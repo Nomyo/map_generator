@@ -9,29 +9,20 @@
 
 #include <shader_m.hh>
 
-// For later use better with texture and light.
-//////////////////////////////
-// struct Vertex	    //
-// {			    //
-//     glm::vec3 position;  //
-//     glm::vec3 normal;    //
-//     glm::vec2 tex_coord; //
-// };			    //
-//////////////////////////////
-
 struct Vertex
 {
     glm::vec3 position;
     glm::vec3 color;
 };
 
-class Mesh
+class MeshColor
 {
 public:
-    Mesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices);
-    ~Mesh();
+    MeshColor(std::vector<Vertex> vertices, std::vector<unsigned int> indices);
+    ~MeshColor();
 
     void draw(Shader shader);
+    std::vector<Vertex> get_vertices();
 
 private:
     void setup_mesh();

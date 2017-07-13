@@ -5,7 +5,7 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
     glViewport(0, 0, width, height);
 }
 
-Mesh create_mesh_from_noise()
+MeshColor create_mesh_from_noise()
 {
     SimplexNoise noise_generator;
     std::vector<Vertex> vertices;
@@ -15,7 +15,7 @@ Mesh create_mesh_from_noise()
     {
 	for (int x = 0; x < 300; ++x)
 	{
-	    double scale = 0.002;
+	    double scale = 0.00085;
 	    float p_noise =
 		noise_generator.sum_octave(16, x, z, 0.6, scale, 0, 255);
 
@@ -61,13 +61,13 @@ Mesh create_mesh_from_noise()
 	{
 	    color.x = (1.0f / 255.0f) * 255.0f;
 	    color.y = (1.0f / 255.0f) * 255.0f;
-	    color.z = (1.0f / 255.0f) * 102.0f;
+	    color.z = (1.0f / 255.0f) * 255.0f;
 	}
 	else if (p_noise < 220)
 	{
 	    color.x = (1.0f / 255.0f) * 255.0f;
 	    color.y = (1.0f / 255.0f) * 255.0f;
-	    color.z = (1.0f / 255.0f) * 204.0f;
+	    color.z = (1.0f / 255.0f) * 255.0f;
 	}
 	else
 	{
@@ -77,8 +77,7 @@ Mesh create_mesh_from_noise()
 	}
 
 	vertices.emplace_back(
-	    Vertex{glm::vec3(x, -(p_noise / 2.0f), z),
-		    color});
+	    Vertex{glm::vec3(x, (p_noise / 2.0f) * 0.5f , z), color});
 	}
     }
 
@@ -96,6 +95,47 @@ Mesh create_mesh_from_noise()
 	}
     }
 
-    Mesh m(vertices, indices);
+    MeshColor m(vertices, indices);
     return m;
+}
+
+std::vector<Entity> create_entities_from_vertices(const std::vector<Vertex>& ve)
+{
+    // FIXME REALLY NOT AN OPTIMIZED SOLUTION
+    // the right way should be, one model and multiple position
+    // to display it. Do it later.
+
+    auto entities = std::vector<Entity>{};
+    Model tree_model("textures/pine.obj", "textures/pine.png", "", false);
+
+    std::random_device rd;
+    std::mt19937 eng(rd());
+    std::uniform_int_distribution<> distr(0, 500);
+
+    auto rand = std::bind(distr, eng);
+
+    for (auto vertex : ve)
+    {
+	if (!(vertex.position.y >= 20.0f && vertex.position.y < 25.0f))
+	{
+	    auto r = rand();
+	    switch (r)
+	    {
+	    case 1: // FIXME SHOULD CARE ABOUT MAP ROTATION
+		entities.push_back(Entity{tree_model, vertex.position
+			    ,glm::vec3(1.0f, 0.0f, 0.0f), 0.30f});
+		break;
+	    case 2:
+		entities.push_back(Entity{tree_model, vertex.position
+			    ,glm::vec3(1.0f, 0.0f, 0.0f), 0.45f});
+		break;
+	    case 3:
+		entities.push_back(Entity{tree_model, vertex.position
+			    ,glm::vec3(1.0f, 0.0f, 0.0f), 0.60f});
+	    default:
+		break;
+	    }
+	}
+    }
+    return entities;
 }

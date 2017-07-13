@@ -1,27 +1,32 @@
-#include <mesh.hh>
+#include <mesh-color.hh>
 
-Mesh::Mesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices)
+MeshColor::MeshColor(std::vector<Vertex> vertices, std::vector<unsigned int> indices)
     : vertices_(vertices)
     , indices_(indices)
 {
     setup_mesh();
 }
 
-Mesh::~Mesh()
+MeshColor::~MeshColor()
 {
     glDeleteVertexArrays(1, &VAO_);
     glDeleteBuffers(1, &VBO_);
 }
 
-void Mesh::draw(Shader /*shader*/)
+void MeshColor::draw(Shader /*shader*/)
 {
     glBindVertexArray(VAO_);
     glDrawElements(GL_TRIANGLES, indices_.size(), GL_UNSIGNED_INT, 0);
     glBindVertexArray(0);
 }
 
+std::vector<Vertex> MeshColor::get_vertices()
+{
+    return vertices_;
+}
 
-void Mesh::setup_mesh()
+
+void MeshColor::setup_mesh()
 {
     glGenVertexArrays(1, &VAO_);
     glGenBuffers(1, &VBO_);

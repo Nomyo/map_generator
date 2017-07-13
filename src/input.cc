@@ -33,7 +33,7 @@ void Input::process_input(GLFWwindow *window)
     if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
 	camera->boosted(100.0f);
     else
-	camera->boosted(50.0);
+	camera->boosted(25.0);
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
 	camera->process_keyboard(Camera::Camera_movement::FORWARD, deltaTime);
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)

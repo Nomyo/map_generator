@@ -1,6 +1,7 @@
 #pragma once
 
-#include <mesh.hh>
+#include <mesh-color.hh>
+#include <entity.hh>
 #include <simplexnoise.hh>
 
 #include <GLFW/glfw3.h>
@@ -17,4 +18,9 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 /**
  * Perform perlin noise and build a mesh with it
  */
-Mesh create_mesh_from_noise();
+MeshColor create_mesh_from_noise();
+
+/**
+ * Fill up and entity for now randomly with trees
+ */
+std::vector<Entity> create_entities_from_vertices(const std::vector<Vertex>& ve);
