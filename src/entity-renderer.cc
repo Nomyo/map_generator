@@ -1,13 +1,14 @@
 #include <entity-renderer.hh>
 
 EntityRenderer::EntityRenderer(Shader shader, glm::mat4 projection_mat,
-			       glm::mat4 view_mat)
+			       glm::mat4 view_mat, Light light)
     : shader_(shader)
 {
     shader_.use();
     shader_.setMat4("projection", projection_mat);
     shader_.setMat4("view", view_mat);
-
+    shader_.setVec3("lightPos", light.get_position());
+    shader_.setVec3("lightColor", light.get_color());
 }
 
 void EntityRenderer::render(const std::vector<Entity>& entities)
@@ -27,5 +28,9 @@ void EntityRenderer::prepare_instance(const Entity& entity)
 
     //FIXME rotation
     model = glm::rotate(model, glm::radians(0.0f), entity.get_rotation());
+    if (entity.get_model().has_fake_lighting())
+	shader_.setFloat("fake_lighting", 1.0f);
+    else
+	shader_.setFloat("fake_lighting", 0.0f);
     shader_.setMat4("model", model);
 }

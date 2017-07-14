@@ -24,6 +24,15 @@ void Model::draw(Shader shader)
 	meshes[i].draw(shader);
 }
 
+bool Model::has_fake_lighting()
+{
+    return fake_light_;
+}
+
+void Model::set_fake_lighting(bool b)
+{
+    fake_light_ = b;
+}
 
 void Model::load_model(const std::string &path)
 {

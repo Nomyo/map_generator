@@ -92,6 +92,9 @@ int start_opengl()
     auto map_vertices = map_mesh.get_vertices();
     auto entities = create_entities_from_vertices(map_vertices);
 
+    //Light
+    Light map_light(glm::vec3(150.0f, 100.0f, 150.0f), glm::vec3(1.0f, 1.0f, 1.0f));
+
     our_map_shader.use();
 
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -110,7 +113,7 @@ int start_opengl()
 
 	// render
 	// ------
-	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+	glClearColor(149.0f / 255.0f,203.0f / 255.0f, 255.0f / 255.0f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	// activate shader for map mesh ! !
@@ -120,6 +123,9 @@ int start_opengl()
 	    glm::radians(camera->get_zoom()),
 	    (float)Input::SCR_WIDTH / (float)Input::SCR_HEIGHT, 0.1f, 650.0f);
 	our_map_shader.setMat4("projection", projection);
+	our_map_shader.setVec3("lightPos", map_light.get_position());
+	our_map_shader.setVec3("lightColor", map_light.get_color());
+
 
 	glm::mat4 view = camera->get_view_matrix();
 	our_map_shader.setMat4("view", view);
@@ -132,7 +138,7 @@ int start_opengl()
 	map_mesh.draw(our_map_shader);
 
 	// Render entities
-	EntityRenderer z(our_model_shader, projection, view);
+	EntityRenderer z(our_model_shader, projection, view, map_light);
 	z.render(entities);
 
 	glfwSwapBuffers(window);

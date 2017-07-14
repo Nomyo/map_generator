@@ -30,6 +30,8 @@ public:
 	  const std::string& texture_path, const std::string& directory,
 	  bool gamma);
     void draw(Shader shader);
+    bool has_fake_lighting();
+    void set_fake_lighting(bool b);
 
 private:
     /*  Functions   */
@@ -52,5 +54,6 @@ private:
     std::string texture_path_;
     std::string directory_;
 
+    bool fake_light_ = false;
     bool gamma_correction;
 };

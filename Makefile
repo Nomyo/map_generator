@@ -19,6 +19,7 @@ SOURCE = \
 	$(DIR)/model.cc			\
 	$(DIR)/entity-renderer.cc	\
 	$(DIR)/mesh-texture.cc		\
+	$(DIR)/light.cc			\
 	$(DIR)/main.cc
 
 INC_DIR = inc/

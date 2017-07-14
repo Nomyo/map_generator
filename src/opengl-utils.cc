@@ -107,12 +107,18 @@ std::vector<Entity> create_entities_from_vertices(const std::vector<Vertex>& ve)
 
     auto entities = std::vector<Entity>{};
     Model tree_model("textures/pine.obj", "textures/pine.png", "", false);
+    Model grass_model("textures/grassModel.obj", "textures/grassTexture.png", "", false);
+    grass_model.set_fake_lighting(true);
+    Model flower_model("textures/grassModel.obj", "textures/flower.png", "", false);
+    flower_model.set_fake_lighting(true);
 
     std::random_device rd;
     std::mt19937 eng(rd());
     std::uniform_int_distribution<> distr(0, 500);
+    std::uniform_int_distribution<> distr2(0, 3000);
 
     auto rand = std::bind(distr, eng);
+    auto rand2 = std::bind(distr2, eng);
 
     for (auto vertex : ve)
     {
@@ -135,6 +141,14 @@ std::vector<Entity> create_entities_from_vertices(const std::vector<Vertex>& ve)
 	    default:
 		break;
 	    }
+
+	    auto grass_r = rand2();
+	    if (grass_r == 0 || grass_r == 1)
+		entities.push_back(Entity{grass_model, vertex.position,
+			    glm::vec3(1.0f, 0.0f, 0.0f), 1.0f});
+	    if (grass_r == 2)
+		entities.push_back(Entity{flower_model, vertex.position,
+			    glm::vec3(1.0f, 0.0f, 0.0f), 1.0f});
 	}
     }
     return entities;
