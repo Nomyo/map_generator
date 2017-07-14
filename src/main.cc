@@ -84,6 +84,7 @@ int start_opengl()
     // Create our shader
     Shader our_map_shader("shaders/basic.vs", "shaders/basic.fs");
     Shader our_model_shader("shaders/model.vs", "shaders/model.fs");
+    Shader our_lamp_shader("shaders/lamp.vs", "shaders/lamp.fs");
 
     // Mesh & Model
     MeshTerrain map_mesh = create_mesh_from_noise();
@@ -93,10 +94,22 @@ int start_opengl()
     auto entities = create_entities_from_vertices(map_vertices);
 
     //Light
-    Light map_light(glm::vec3(150.0f, 100.0f, 150.0f), glm::vec3(1.0f, 1.0f, 1.0f));
+    Light map_light(glm::vec3(150.0f, 160.0f, 150.0f),
+		    glm::vec3(1.0f, 1.0f, 1.0f));
 
-    our_map_shader.use();
+    unsigned int VBO;
+    unsigned int lightVAO;
+    glGenVertexArrays(1, &lightVAO);
+    glGenBuffers(1, &VBO);
 
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+    glBindVertexArray(lightVAO);
+
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+
+    bool inc = false;
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
     while (!glfwWindowShouldClose(window))
@@ -113,7 +126,8 @@ int start_opengl()
 
 	// render
 	// ------
-	glClearColor(149.0f / 255.0f,203.0f / 255.0f, 255.0f / 255.0f, 1.0f);
+	//glClearColor(149.0f / 255.0f,203.0f / 255.0f, 255.0f / 255.0f, 1.0f);
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	// activate shader for map mesh ! !
@@ -140,6 +154,29 @@ int start_opengl()
 	// Render entities
 	EntityRenderer z(our_model_shader, projection, view, map_light);
 	z.render(entities);
+
+	// Display lamp
+        our_lamp_shader.use();
+        our_lamp_shader.setMat4("projection", projection);
+        our_lamp_shader.setMat4("view", view);
+	model = glm::mat4();
+	model = glm::translate(model, map_light.get_position());
+	model = glm::scale(model, glm::vec3(3.0f)); // a smaller cube
+        our_lamp_shader.setMat4("model", model);
+
+
+	glBindVertexArray(lightVAO);
+	glDrawArrays(GL_TRIANGLES, 0, 36);
+
+	// update
+	auto light_pos = map_light.get_position();
+	if (light_pos.x > 450)
+	    inc = false;
+	if (light_pos.x < -150)
+	    inc = true;
+
+	map_light.set_position(glm::vec3(inc ? light_pos.x + 1 : light_pos.x - 1,
+					 light_pos.y, light_pos.z));
 
 	glfwSwapBuffers(window);
 	glfwPollEvents();
