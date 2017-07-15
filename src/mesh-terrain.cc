@@ -15,7 +15,7 @@ MeshTerrain::~MeshTerrain()
     glDeleteBuffers(1, &VBO_);
 }
 
-void MeshTerrain::draw(Shader /*shader*/)
+void MeshTerrain::draw(Shader /*shader*/) const
 {
     glBindTexture(GL_TEXTURE_2D, texture_id_);
 
@@ -24,12 +24,12 @@ void MeshTerrain::draw(Shader /*shader*/)
     glBindVertexArray(0);
 }
 
-std::vector<Vertex> MeshTerrain::get_vertices()
+std::vector<Vertex> MeshTerrain::get_vertices() const
 {
     return vertices_;
 }
 
-unsigned int MeshTerrain::get_texture_id()
+unsigned int MeshTerrain::get_texture_id() const
 {
     return texture_id_;
 }

@@ -4,10 +4,12 @@ out vec4 FragColor;
 in vec2 TexCoords;
 in vec3 Normal;
 in vec3 FragPos;
+in float visibility;
 
 uniform vec3 lightPos;
 uniform vec3 lightColor;
 uniform sampler2D texture_diffuse1;
+uniform vec3 skyColour;
 
 void main()
 {
@@ -25,6 +27,7 @@ void main()
     if (texture_color.a < 0.5f)
     discard;
 
-    vec3 result = (ambient + diffuse) * texture_color.xyz;
-    FragColor = vec4(result, 1.0f);
+    vec3 result_color = (ambient + diffuse) * texture_color.xyz;
+    vec4 final_color = mix(vec4(skyColour, 1.0), vec4(result_color, 1.0), visibility);
+    FragColor = final_color;
 }

@@ -30,6 +30,7 @@ public:
     virtual ~Camera() = default;
 
     virtual glm::mat4 get_view_matrix();
+    virtual glm::vec3 get_view_pos();
     virtual float get_zoom();
     virtual void boosted(float factor);
     virtual void process_keyboard(Camera_movement dir, float delta_time);

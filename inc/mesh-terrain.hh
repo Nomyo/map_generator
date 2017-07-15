@@ -23,9 +23,9 @@ public:
     MeshTerrain(std::vector<Vertex> vertices, std::vector<unsigned int> indices);
     ~MeshTerrain();
 
-    void draw(Shader shader);
-    std::vector<Vertex> get_vertices();
-    unsigned int get_texture_id();
+    void draw(Shader shader) const;
+    std::vector<Vertex> get_vertices() const;
+    unsigned int get_texture_id() const;
 
 private:
     void setup_mesh();

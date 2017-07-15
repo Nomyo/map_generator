@@ -18,6 +18,7 @@
 #include <mesh-texture.hh>
 #include <main.hh>
 #include <model.hh>
+#include <terrain-renderer.hh>
 
 void do_noise(SDL_Window *window)
 {
@@ -127,39 +128,29 @@ int start_opengl()
 	// render
 	// ------
 	//glClearColor(149.0f / 255.0f,203.0f / 255.0f, 255.0f / 255.0f, 1.0f);
-	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+	glClearColor(0.35f, 0.35f, 0.35f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	// activate shader for map mesh ! !
-	our_map_shader.use();
-
-	glm::mat4 projection = glm::perspective(
-	    glm::radians(camera->get_zoom()),
-	    (float)Input::SCR_WIDTH / (float)Input::SCR_HEIGHT, 0.1f, 650.0f);
-	our_map_shader.setMat4("projection", projection);
-	our_map_shader.setVec3("lightPos", map_light.get_position());
-	our_map_shader.setVec3("lightColor", map_light.get_color());
-
 
 	glm::mat4 view = camera->get_view_matrix();
-	our_map_shader.setMat4("view", view);
+	glm::mat4 projection = glm::perspective(glm::radians(camera->get_zoom()),
+	    (float)Input::SCR_WIDTH / (float)Input::SCR_HEIGHT, 0.1f, 650.0f);
+	glm::vec3 view_pos = camera->get_view_pos();
 
-	glm::mat4 model;
-	model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
-	model = glm::rotate(model, glm::radians(0.0f),
-			    glm::vec3(1.0f, 0.0f, 0.0f));
-	our_map_shader.setMat4("model", model);
-	map_mesh.draw(our_map_shader);
+	// Render terrain
+	TerrainRenderer tr(our_map_shader, projection, view, view_pos, map_light);
+	tr.render(map_mesh);
 
 	// Render entities
-	EntityRenderer z(our_model_shader, projection, view, map_light);
+	EntityRenderer z(our_model_shader, projection, view, view_pos, map_light);
 	z.render(entities);
 
 	// Display lamp
         our_lamp_shader.use();
         our_lamp_shader.setMat4("projection", projection);
         our_lamp_shader.setMat4("view", view);
-	model = glm::mat4();
+	glm::mat4 model;
 	model = glm::translate(model, map_light.get_position());
 	model = glm::scale(model, glm::vec3(3.0f)); // a smaller cube
         our_lamp_shader.setMat4("model", model);
@@ -168,7 +159,7 @@ int start_opengl()
 	glBindVertexArray(lightVAO);
 	glDrawArrays(GL_TRIANGLES, 0, 36);
 
-	// update
+	// update sun pos
 	auto light_pos = map_light.get_position();
 	if (light_pos.x > 450)
 	    inc = false;
