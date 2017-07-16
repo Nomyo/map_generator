@@ -1,11 +1,21 @@
 #include <mesh-terrain.hh>
+#include <opengl-utils.hh>
 
 MeshTerrain::MeshTerrain(std::vector<Vertex> vertices,
 		     std::vector<unsigned int> indices)
     : vertices_(vertices)
     , indices_(indices)
 {
-    prepare_texture();
+    setup_mesh();
+}
+
+MeshTerrain::MeshTerrain(std::vector<Vertex> vertices,
+			 std::vector<unsigned int> indices,
+			 TerrainTexturePack texture_pack)
+    : vertices_(vertices)
+    , indices_(indices)
+    , texture_pack_(texture_pack)
+{
     setup_mesh();
 }
 
@@ -17,7 +27,14 @@ MeshTerrain::~MeshTerrain()
 
 void MeshTerrain::draw(Shader /*shader*/) const
 {
-    glBindTexture(GL_TEXTURE_2D, texture_id_);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, texture_pack_.get_backgroundTexture().get_texture_id());
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, texture_pack_.get_rTexture().get_texture_id());
+    glActiveTexture(GL_TEXTURE2);
+    glBindTexture(GL_TEXTURE_2D, texture_pack_.get_gTexture().get_texture_id());
+    glActiveTexture(GL_TEXTURE3);
+    glBindTexture(GL_TEXTURE_2D, texture_pack_.get_bTexture().get_texture_id());
 
     glBindVertexArray(VAO_);
     glDrawElements(GL_TRIANGLES, indices_.size(), GL_UNSIGNED_INT, 0);
@@ -29,40 +46,14 @@ std::vector<Vertex> MeshTerrain::get_vertices() const
     return vertices_;
 }
 
-unsigned int MeshTerrain::get_texture_id() const
+TerrainTexturePack MeshTerrain::get_texture_pack() const
 {
-    return texture_id_;
+    return texture_pack_;
 }
 
-void MeshTerrain::prepare_texture()
+void MeshTerrain::set_texture_pack(TerrainTexturePack t)
 {
-    glGenTextures(1, &texture_id_);
-    glBindTexture(GL_TEXTURE_2D, texture_id_);
-
-    // set the texture wrapping parameters
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
-   // set texture filtering parameters
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    // load image, create texture and generate mipmaps
-
-    int width, height, nrChannels;
-    unsigned char *data = stbi_load("textures/Snow.jpg", &width, &height,
-				    &nrChannels, 0);
-    if (data)
-    {
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB,
-		     GL_UNSIGNED_BYTE, data);
-	glGenerateMipmap(GL_TEXTURE_2D);
-    }
-    else
-    {
-	std::cout << "Failed to load texture" << std::endl;
-    }
-
-    stbi_image_free(data);
+    texture_pack_ = t;
 }
 
 void MeshTerrain::setup_mesh()
@@ -90,11 +81,15 @@ void MeshTerrain::setup_mesh()
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof (Vertex),
 			  (void*)(offsetof(Vertex, color)));
 
-
+    // text_coord attribute
     glEnableVertexAttribArray(2);
     glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof (Vertex),
 			  (void*)(offsetof(Vertex, texture_coord)));
 
+    // text_coord attribute
+    glEnableVertexAttribArray(3);
+    glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof (Vertex),
+			  (void*)(offsetof(Vertex, blend_color)));
 
    //glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);

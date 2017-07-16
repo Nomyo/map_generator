@@ -88,14 +88,20 @@ int start_opengl()
     Shader our_lamp_shader("shaders/lamp.vs", "shaders/lamp.fs");
 
     // Mesh & Model
+    TerrainTexturePack t_pack(TerrainTexture{load_texturegl("textures/grass.png")},
+			      TerrainTexture{load_texturegl("textures/Snow.jpg")},
+			      TerrainTexture{load_texturegl("textures/grassy3.png")},
+			      TerrainTexture{load_texturegl("textures/rocky.jpg")});
+
     MeshTerrain map_mesh = create_mesh_from_noise();
+    map_mesh.set_texture_pack(t_pack);
 
     //Entity
     auto map_vertices = map_mesh.get_vertices();
     auto entities = create_entities_from_vertices(map_vertices);
 
     //Light
-    Light map_light(glm::vec3(150.0f, 160.0f, 150.0f),
+    Light map_light(glm::vec3(150.0f, 200.0f, 150.0f),
 		    glm::vec3(1.0f, 1.0f, 1.0f));
 
     unsigned int VBO;
@@ -140,7 +146,7 @@ int start_opengl()
 
 	// Render terrain
 	TerrainRenderer tr(our_map_shader, projection, view, view_pos, map_light);
-	tr.render(map_mesh);
+	tr.render(map_mesh, t_pack);
 
 	// Render entities
 	EntityRenderer z(our_model_shader, projection, view, view_pos, map_light);

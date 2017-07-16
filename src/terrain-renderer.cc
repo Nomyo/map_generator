@@ -12,17 +12,22 @@ TerrainRenderer::TerrainRenderer(Shader shader, glm::mat4 projection_mat,
     shader_.setVec3("skyColour", glm::vec3(1.0f, 1.0f, 1.0f));
 }
 
-void TerrainRenderer::render(const MeshTerrain& terrain)
+void TerrainRenderer::render(const MeshTerrain& terrain, TerrainTexturePack text_pack)
 {
-    prepare_instance();
+    prepare_instance(text_pack);
     terrain.draw(shader_);
 }
 
-void TerrainRenderer::prepare_instance()
+void TerrainRenderer::prepare_instance(TerrainTexturePack text_pack)
 {
     glm::mat4 model;
     model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
     model = glm::rotate(model, glm::radians(0.0f),
 			glm::vec3(1.0f, 0.0f, 0.0f));
     shader_.setMat4("model", model);
+
+    shader_.setInt("background", 0);
+    shader_.setInt("rtexture", 1);
+    shader_.setInt("gtexture", 2);
+    shader_.setInt("btexture", 3);
 }

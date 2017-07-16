@@ -24,3 +24,14 @@ MeshTerrain create_mesh_from_noise();
  * Fill up and entity for now randomly with trees
  */
 std::vector<Entity> create_entities_from_vertices(const std::vector<Vertex>& ve);
+
+/**
+ * Load texture from a path and return its opengl id
+ */
+unsigned int load_texturegl(const std::string& path);
+
+/**
+ * Set color from height and moisture noise
+ */
+void set_color_from_noise(float height, float moisture,
+			  glm::vec3& color, glm::vec3& blend_color);

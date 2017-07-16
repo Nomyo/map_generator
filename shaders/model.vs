@@ -14,7 +14,7 @@ uniform mat4 projection;
 
 uniform float fake_lighting;
 
-const float density = 0.007;
+const float density = 0.0045;
 const float gradient = 1.5;
 
 void main()

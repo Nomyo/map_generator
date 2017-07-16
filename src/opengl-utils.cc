@@ -8,6 +8,7 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 MeshTerrain create_mesh_from_noise()
 {
     SimplexNoise noise_generator;
+    SimplexNoise noise_generator2;
     std::vector<Vertex> vertices;
     std::vector<unsigned int> indices;
 
@@ -15,69 +16,22 @@ MeshTerrain create_mesh_from_noise()
     {
 	for (int x = 0; x < 300; ++x)
 	{
-	    double scale = 0.00085;
+	    double scale = 0.003;
 	    float p_noise =
 		noise_generator.sum_octave(16, x, z, 0.6, scale, 0, 255);
+	    double scale2 = 0.005;
+	    float m_noise =
+		noise_generator2.sum_octave(16, x, z, 0.6, scale2, 0, 255);
 
 	    glm::vec3 color;
-	if (p_noise < 50)
-	{
-	    color.x = 0;
-	    color.y = 0;
-	    color.z = (1.0f / 255.0f) * 204.0f;
-	}
-	else if (p_noise < 70)
-	{
-	    color.x = 0;
-	    color.y = (1.0f / 255.0f) * 128.0f;
-	    color.z = (1.0f / 255.0f) * 255.0f;
+	    glm::vec3 blend_color;
 
-	}
-	else if (p_noise < 100)
-	{
-	    color.x = 0;
-	    color.y = (1.0f / 255.0f) * 204.0f;
-	    color.z = (1.0f / 255.0f) * 204.0f;
-	}
-	else if (p_noise < 120)
-	{
-	    color.x = 0;
-	    color.y = (1.0f / 255.0f) * 102.0f;
-	    color.z = (1.0f / 255.0f) * 51.0f;
-	}
-	else if (p_noise < 140)
-	{
-	    color.x = 0;
-	    color.y = (1.0f / 255.0f) * 204.0f;
-	    color.z = (1.0f / 255.0f) * 102.0f;
-	}
-	else if (p_noise < 160)
-	{
-	    color.x = 0;
-	    color.y = (1.0f / 255.0f) * 153.0f;
-	    color.z = 0;
-	}
-	else if (p_noise < 200)
-	{
-	    color.x = (1.0f / 255.0f) * 255.0f;
-	    color.y = (1.0f / 255.0f) * 255.0f;
-	    color.z = (1.0f / 255.0f) * 255.0f;
-	}
-	else if (p_noise < 220)
-	{
-	    color.x = (1.0f / 255.0f) * 255.0f;
-	    color.y = (1.0f / 255.0f) * 255.0f;
-	    color.z = (1.0f / 255.0f) * 255.0f;
-	}
-	else
-	{
-	    color.x = 1.0f;
-	    color.y = 1.0f;
-	    color.z = 1.0f;
-	}
+	    set_color_from_noise(p_noise, m_noise, color, blend_color);
 
-	vertices.emplace_back(
-	    Vertex{glm::vec3(x, (p_noise / 2.0f) * 0.5f , z), color, glm::vec2{x, z}});
+	    vertices.emplace_back(
+		Vertex{glm::vec3(x, (p_noise / 2.0f) * 0.5f , z),
+			color, glm::vec2{x, z},
+			blend_color});
 	}
     }
 
@@ -122,7 +76,7 @@ std::vector<Entity> create_entities_from_vertices(const std::vector<Vertex>& ve)
 
     for (auto vertex : ve)
     {
-	if (!(vertex.position.y >= 20.0f && vertex.position.y < 25.0f))
+	if (vertex.position.y >= 22.0f)
 	{
 	    auto r = rand();
 	    switch (r)
@@ -152,4 +106,133 @@ std::vector<Entity> create_entities_from_vertices(const std::vector<Vertex>& ve)
 	}
     }
     return entities;
+}
+
+unsigned int load_texturegl(const std::string& path)
+{
+    unsigned int texture_id;
+    glGenTextures(1, &texture_id);
+    glBindTexture(GL_TEXTURE_2D, texture_id);
+
+    // set the texture wrapping parameters
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+    // set texture filtering parameters
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    // load image, create texture and generate mipmaps
+
+    int width, height, nrChannels;
+    unsigned char *data = stbi_load(path.c_str(), &width, &height,
+				    &nrChannels, 0);
+    if (data)
+    {
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB,
+		     GL_UNSIGNED_BYTE, data);
+	glGenerateMipmap(GL_TEXTURE_2D);
+    }
+    else
+    {
+	std::cout << "Failed to load texture" << std::endl;
+    }
+
+    stbi_image_free(data);
+    return texture_id;
+}
+
+
+void set_color_from_noise(float height, float moisture,
+			  glm::vec3& color, glm::vec3& blend_color)
+{
+    if (height < 50) // dark water
+    {
+	color = glm::vec3{0.0f, 0.0f, (1.0f / 255.0f) * 204.0f};
+	blend_color = glm::vec3{1.0f, 0.0f, 0.0f};
+    }
+    else if (height < 75) // light water
+    {
+	color = glm::vec3{0.0f, (1.0f / 255.0f) * 128.0f, (1.0f / 255.0f) * 255.0f};
+	blend_color = glm::vec3{1.0f, 0.0f, 0.0f};
+    }
+
+    else if (height < 80) // beach
+    {
+	color = glm::vec3{(1.0f / 255.0f) * 228.0f, (1.0f / 255.0f) * 198.0f,
+			  (1.0f / 255.0f) * 169.0f};
+	blend_color = glm::vec3{1.0f, 0.0f, 0.0f};
+    }
+    else if (height < 85) // beach transition
+    {
+	color = glm::vec3{(1.0f / 255.0f) * 228.0f, (1.0f / 255.0f) * 198.0f,
+			  (1.0f / 255.0f) * 169.0f};
+	if (moisture < 100)
+	    blend_color = glm::vec3{0.50f, 0.0f, 0.50f};
+	else if (moisture < 159.5)
+	    blend_color = glm::vec3{0.49f, 0.0f, 0.0f}; // grass x white
+	else
+	    blend_color = glm::vec3{0.51f, 0.0f, 0.0f}; // grass x green dark
+    }
+
+    else if (height < 150) // desert / grass / dark grass
+    {
+	color = glm::vec3{1.0f, 1.0f, 1.0f};
+
+	if (moisture < 100)
+	    blend_color = glm::vec3{0.0f, 0.0f, 1.0f};
+	else if (moisture < 159.5)
+	    blend_color = glm::vec3{0.0f, 0.0f, 0.0f}; // grass x b
+	else
+	{
+	    blend_color = glm::vec3{0.0f, 0.0f, 0.0f}; // grass x green dark
+	    color = glm::vec3{0.0f, (1.0f / 255.0f) * 102.0f ,0.0f}; // green dark
+	}
+    }
+
+    else if (height < 160) // desert / grass / dark grass transition
+    {
+	color = glm::vec3{1.0f, 1.0f, 1.0f};
+
+	if (moisture < 100)
+	    blend_color = glm::vec3{0.0f, 0.0f, 1.0f};
+	else if (moisture < 159.5)
+	    blend_color = glm::vec3{0.0f, 0.5f, 0.0f}; // grassy x b
+	else
+	{
+	    blend_color = glm::vec3{0.0f, 0.5f, 0.0f}; // grassy x green dark
+	    color = glm::vec3{0.0f, (1.0f / 255.0f) * 102.0f ,0.0f}; // green dark
+	}
+    }
+
+    else if (height < 200) // desert / grassy / dark grassy
+    {
+	color = glm::vec3{1.0f, 1.0f, 1.0f};
+
+	if (moisture < 100)
+	    blend_color = glm::vec3{0.0f, 0.0f, 1.0f};
+	else if (moisture < 159.5)
+	    blend_color = glm::vec3{0.0f, 1.0f, 0.0f}; // grassy x b
+	else
+	{
+	    blend_color = glm::vec3{0.0f, 1.0f, 0.0f}; // grassy x green dark
+	    color = glm::vec3{0.0f, (1.0f / 255.0f) * 102.0f ,0.0f}; // green dark
+	}
+    }
+
+    else if (height < 210)  // desert / grassy / dark grassy transition
+    {
+	color = glm::vec3{1.0f, 1.0f, 1.0f};
+
+	if (moisture < 100)
+	    blend_color = glm::vec3{0.0f, 0.0f, 1.0f};
+	else if (moisture < 159.5)
+	    blend_color = glm::vec3{0.49f, 0.51f, 0.0f}; // grassy x b
+	else
+	    blend_color = glm::vec3{0.51f, 0.49f, 0.0f}; // grassy x green dark
+    }
+    else
+    {
+	color = glm::vec3{1.0f, 1.0f, 1.0f};
+	blend_color = glm::vec3{1.0f, 0.0f, 0.0f}; // grass x green dark
+    }
 }
