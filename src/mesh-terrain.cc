@@ -49,7 +49,7 @@ void MeshTerrain::prepare_texture()
     // load image, create texture and generate mipmaps
 
     int width, height, nrChannels;
-    unsigned char *data = stbi_load("textures/grass.png", &width, &height,
+    unsigned char *data = stbi_load("textures/Snow.jpg", &width, &height,
 				    &nrChannels, 0);
     if (data)
     {

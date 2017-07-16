@@ -9,6 +9,7 @@ uniform mat4 projection;
 
 out vec3 FragPos;
 out vec2 TexCoord;
+out vec3 ourColor;
 out float visibility;
 
 const float density = 0.007;
@@ -20,7 +21,7 @@ void main()
     vec4 world_position = vec4(FragPos, 1.0);
     vec4 position_relative_to_cam = view * world_position;
 
-    //ourColor = aColor;
+    ourColor = aColor;
     TexCoord = vec2(aTexCoord.x, aTexCoord.y) * 0.2;
     gl_Position = projection * position_relative_to_cam;
 
