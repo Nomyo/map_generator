@@ -28,20 +28,20 @@ void do_noise(SDL_Window *window)
     uint32_t mat[1280][720] = { 0 };
 
     for (int i = 0; i < 1280; ++i)
-	for (int j = 0; j < 720; ++j)
-	{
-	    double scale = 0.001;
-	    int p_noise =
-		noise_generator.sum_octave(16, i, j, 0.6, scale, 0, 255);
-	    mat[i][j] = p_noise | (p_noise << 8) | (p_noise << 16);
-	}
+    	for (int j = 0; j < 720; ++j)
+    	{
+    	    double scale = 0.001;
+    	    int p_noise =
+    		noise_generator.sum_octave(16, i, j, 0.6, scale, 0, 255);
+    	    mat[i][j] = p_noise | (p_noise << 8) | (p_noise << 16);
+    	}
 
     auto surf = create_surface(1280, 720);
     for (int i = 0; i < 1280; ++i)
-	for (int j = 0; j < 720; ++j)
-	{
-	    put_pixel_color(surf, i, j, mat[i][j]);
-	}
+    	for (int j = 0; j < 720; ++j)
+    	{
+    	    put_pixel_color(surf, i, j, mat[i][j]);
+    	}
 
     display_surface(surf, window);
 }
@@ -57,9 +57,9 @@ int start_opengl()
 					  "LearnOpenGL", NULL, NULL);
     if (window == NULL)
     {
-	std::cout << "Failed to create GLFW window" << std::endl;
-	glfwTerminate();
-	return -1;
+    	std::cout << "Failed to create GLFW window" << std::endl;
+    	glfwTerminate();
+    	return -1;
     }
 
     auto& input = Input::get_instance();
@@ -76,8 +76,8 @@ int start_opengl()
 
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
     {
-	std::cout << "Failed to initialize GLAD" << std::endl;
-	return -1;
+    	std::cout << "Failed to initialize GLAD" << std::endl;
+    	return -1;
     }
 
     glEnable(GL_DEPTH_TEST);
@@ -93,12 +93,20 @@ int start_opengl()
 			      TerrainTexture{load_texturegl("textures/grassy3.png")},
 			      TerrainTexture{load_texturegl("textures/rocky.jpg")});
 
-    MeshTerrain map_mesh = create_mesh_from_noise();
-    map_mesh.set_texture_pack(t_pack);
+    std::vector<MeshTerrain> map_mesh = std::vector<MeshTerrain>{};
+    map_mesh.push_back(create_mesh_from_noise(0, 0, 300, 300));
+
+    for (auto& mesh: map_mesh)
+    {
+      mesh.set_texture_pack(t_pack);
+    }
 
     //Entity
-    auto map_vertices = map_mesh.get_vertices();
-    auto entities = create_entities_from_vertices(map_vertices);
+    std::vector<std::vector<Entity>> entities;
+    for (auto& mesh: map_mesh)
+    {
+      entities.push_back(create_entities_from_vertices(mesh.get_vertices()));
+    }
 
     //Light
     Light map_light(glm::vec3(150.0f, 200.0f, 150.0f),
@@ -121,62 +129,68 @@ int start_opengl()
 
     while (!glfwWindowShouldClose(window))
     {
-	// per-frame time logic
-	// --------------------
-	float currentFrame = glfwGetTime();
-	Input::deltaTime = currentFrame - Input::lastFrame;
-	Input::lastFrame = currentFrame;
+    	// per-frame time logic
+    	// --------------------
+    	float currentFrame = glfwGetTime();
+    	Input::deltaTime = currentFrame - Input::lastFrame;
+    	Input::lastFrame = currentFrame;
 
-	// input
-	// -----
-	input.process_input(window);
+    	// input
+    	// -----
+    	input.process_input(window);
 
-	// render
-	// ------
-	//glClearColor(149.0f / 255.0f,203.0f / 255.0f, 255.0f / 255.0f, 1.0f);
-	glClearColor(0.35f, 0.35f, 0.35f, 1.0f);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    	// render
+    	// ------
+    	//glClearColor(149.0f / 255.0f,203.0f / 255.0f, 255.0f / 255.0f, 1.0f);
+    	glClearColor(0.35f, 0.35f, 0.35f, 1.0f);
+    	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	// activate shader for map mesh ! !
+    	// activate shader for map mesh ! !
 
-	glm::mat4 view = camera->get_view_matrix();
-	glm::mat4 projection = glm::perspective(glm::radians(camera->get_zoom()),
-	    (float)Input::SCR_WIDTH / (float)Input::SCR_HEIGHT, 0.1f, 650.0f);
-	glm::vec3 view_pos = camera->get_view_pos();
+    	glm::mat4 view = camera->get_view_matrix();
+    	glm::mat4 projection = glm::perspective(glm::radians(camera->get_zoom()),
+    	    (float)Input::SCR_WIDTH / (float)Input::SCR_HEIGHT, 0.1f, 650.0f);
+    	glm::vec3 view_pos = camera->get_view_pos();
 
-	// Render terrain
-	TerrainRenderer tr(our_map_shader, projection, view, view_pos, map_light);
-	tr.render(map_mesh, t_pack);
+    	// Render terrain
+    	TerrainRenderer tr(our_map_shader, projection, view, view_pos, map_light);
+      for (auto& mesh: map_mesh)
+      {
+        tr.render(mesh, t_pack);
+      }
 
-	// Render entities
-	EntityRenderer z(our_model_shader, projection, view, view_pos, map_light);
-	z.render(entities);
+    	// Render entities
+    	EntityRenderer z(our_model_shader, projection, view, view_pos, map_light);
+      for (auto& ent: entities)
+      {
+        z.render(ent);
+      }
 
-	// Display lamp
-        our_lamp_shader.use();
-        our_lamp_shader.setMat4("projection", projection);
-        our_lamp_shader.setMat4("view", view);
-	glm::mat4 model;
-	model = glm::translate(model, map_light.get_position());
-	model = glm::scale(model, glm::vec3(3.0f)); // a smaller cube
-        our_lamp_shader.setMat4("model", model);
+    	// Display lamp
+      our_lamp_shader.use();
+      our_lamp_shader.setMat4("projection", projection);
+      our_lamp_shader.setMat4("view", view);
+    	glm::mat4 model;
+    	model = glm::translate(model, map_light.get_position());
+    	model = glm::scale(model, glm::vec3(3.0f)); // a smaller cube
+            our_lamp_shader.setMat4("model", model);
 
 
-	glBindVertexArray(lightVAO);
-	glDrawArrays(GL_TRIANGLES, 0, 36);
+    	glBindVertexArray(lightVAO);
+    	glDrawArrays(GL_TRIANGLES, 0, 36);
 
-	// update sun pos
-	auto light_pos = map_light.get_position();
-	if (light_pos.x > 450)
-	    inc = false;
-	if (light_pos.x < -150)
-	    inc = true;
+    	// update sun pos
+    	auto light_pos = map_light.get_position();
+    	if (light_pos.x > 450)
+    	    inc = false;
+    	if (light_pos.x < -150)
+    	    inc = true;
 
-	map_light.set_position(glm::vec3(inc ? light_pos.x + 1 : light_pos.x - 1,
-					 light_pos.y, light_pos.z));
+    	map_light.set_position(glm::vec3(inc ? light_pos.x + 1 : light_pos.x - 1,
+    					 light_pos.y, light_pos.z));
 
-	glfwSwapBuffers(window);
-	glfwPollEvents();
+    	glfwSwapBuffers(window);
+    	glfwPollEvents();
     }
 
     glfwTerminate();

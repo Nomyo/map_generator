@@ -18,7 +18,7 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 /**
  * Perform perlin noise and build a mesh with it
  */
-MeshTerrain create_mesh_from_noise();
+MeshTerrain create_mesh_from_noise(int startZ, int startX, int lengthZ, int lengthX);
 
 /**
  * Fill up and entity for now randomly with trees

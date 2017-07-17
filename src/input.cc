@@ -54,8 +54,8 @@ void Input::mouse_callback(GLFWwindow* window, double xpos, double ypos)
 
     if (first_mouse_)
     {
-	lastX_ = xpos;
-	lastY_ = ypos;
+	      lastX_ = xpos;
+	      lastY_ = ypos;
         first_mouse_ = false;
     }
 
