@@ -29,7 +29,7 @@ void main()
 	actual_normal = vec3(0.0f, 1.0f, 0.0f);
     }
 
-    Normal = mat3(transpose(inverse(model))) * aNormal;
+    Normal = mat3(transpose(inverse(model))) * actual_normal;
     TexCoords = aTexCoords;
     gl_Position = projection * view * vec4(FragPos, 1.0);
 

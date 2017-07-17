@@ -6,12 +6,15 @@ in float visibility;
 in vec3 FragPos;
 in vec3 ourColor;
 in vec3 blendColour;
+in vec3 Normal;
 
 uniform sampler2D background;
 uniform sampler2D rtexture;
 uniform sampler2D gtexture;
 uniform sampler2D btexture;
 uniform vec3 skyColour;
+uniform vec3 lightPos;
+uniform vec3 lightColor;
 
 
 void main()
@@ -42,8 +45,19 @@ void main()
 
     vec4 totalColour = backgroundTextureColour + rTextureColour + gTextureColour + bTextureColour;
 
-    vec4 result_color = totalColour;
-    vec4 final_color = mix(vec4(skyColour, 1.0), result_color, visibility);
+    // LIGHT
+    // ambient
+    float ambientStrength = 0.2;
+    vec3 ambient = ambientStrength * lightColor;
+
+    // diffuse
+    vec3 norm = normalize(Normal);
+    vec3 lightDir = normalize(lightPos - FragPos);
+    float diff = max(dot(norm, lightDir), 0.0);
+    vec3 diffuse = diff * lightColor;
+
+    vec3 result_color = (ambient + diffuse) * totalColour.xyz;
+    vec4 final_color = mix(vec4(skyColour, 1.0), vec4(result_color, 1.0), visibility);
 
     FragColor = final_color;
 }

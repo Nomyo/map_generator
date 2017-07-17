@@ -3,6 +3,7 @@ layout (location = 0) in vec3 aPos;
 layout (location = 1) in vec3 aColor;
 layout (location = 2) in vec2 aTexCoord;
 layout (location = 3) in vec3 aBlendColor;
+layout (location = 4) in vec3 aNormal;
 
 uniform mat4 model;
 uniform mat4 view;
@@ -13,6 +14,7 @@ out vec2 TexCoord;
 out vec3 ourColor;
 out float visibility;
 out vec3 blendColour;
+out vec3 Normal;
 
 const float density = 0.0045;
 const float gradient = 1.5;
@@ -22,6 +24,7 @@ void main()
     FragPos = vec3(model * vec4(aPos, 1.0));
     vec4 world_position = vec4(FragPos, 1.0);
     vec4 position_relative_to_cam = view * world_position;
+    Normal = aNormal;
 
     ourColor = aColor;
     blendColour = aBlendColor;

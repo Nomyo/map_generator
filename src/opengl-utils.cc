@@ -12,6 +12,7 @@ MeshTerrain create_mesh_from_noise()
     std::vector<Vertex> vertices;
     std::vector<unsigned int> indices;
 
+    // set Height color
     for (int z = 0; z < 300; ++z)
     {
 	for (int x = 0; x < 300; ++x)
@@ -35,6 +36,7 @@ MeshTerrain create_mesh_from_noise()
 	}
     }
 
+    // set Indices
     for (int z = 0; z < 300 - 1; ++z)
     {
 	for (int x = 0; x < 300 - 1; ++x)
@@ -48,6 +50,25 @@ MeshTerrain create_mesh_from_noise()
 	    indices.push_back(start + 300);
 	}
     }
+
+    // set Normals
+    for (int z = 0; z < 300 - 1; ++z)
+    {
+	for (int x = 0; x < 300 - 1; ++x)
+	{
+	    if (x != 0 && x != 299 && z != 0 && z != 299)
+	    {
+		float height_l = vertices[z * 300 + x - 1].position.y;
+		float height_r = vertices[z * 300 + x + 1].position.y;
+		float height_d = vertices[(z - 1) * 300 + x].position.y;
+		float height_u = vertices[(z + 1) *300 + x].position.y;
+		glm::vec3 normal{height_l - height_r, 2.0f, height_d - height_u};
+		normal = glm::normalize(normal);
+		vertices[z * 300 + x].normal = normal;
+	    }
+	}
+    }
+
 
     MeshTerrain m(vertices, indices);
     return m;

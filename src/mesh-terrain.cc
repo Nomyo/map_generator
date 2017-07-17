@@ -91,6 +91,11 @@ void MeshTerrain::setup_mesh()
     glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof (Vertex),
 			  (void*)(offsetof(Vertex, blend_color)));
 
+    // normal attribute
+    glEnableVertexAttribArray(4);
+    glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, sizeof (Vertex),
+			  (void*)(offsetof(Vertex, normal)));
+
    //glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
 }

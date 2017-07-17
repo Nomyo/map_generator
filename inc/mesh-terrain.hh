@@ -1,3 +1,4 @@
+
 #pragma once
 
 #include <glad/glad.h>
@@ -17,6 +18,7 @@ struct Vertex
     glm::vec3 color;
     glm::vec2 texture_coord;
     glm::vec3 blend_color;
+    glm::vec3 normal;
 };
 
 class MeshTerrain
