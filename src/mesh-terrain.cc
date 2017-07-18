@@ -46,6 +46,11 @@ std::vector<Vertex> MeshTerrain::get_vertices() const
     return vertices_;
 }
 
+std::vector<unsigned int> MeshTerrain::get_indices() const
+{
+    return indices_;
+}
+
 TerrainTexturePack MeshTerrain::get_texture_pack() const
 {
     return texture_pack_;

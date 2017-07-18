@@ -93,19 +93,37 @@ int start_opengl()
 			      TerrainTexture{load_texturegl("textures/grassy3.png")},
 			      TerrainTexture{load_texturegl("textures/rocky.jpg")});
 
-    std::vector<MeshTerrain> map_mesh = std::vector<MeshTerrain>{};
-    map_mesh.push_back(create_mesh_from_noise(0, 0, 300, 300));
+    std::vector<MeshTerrain*> map_mesh;
 
-    for (auto& mesh: map_mesh)
+    std::vector<Vertex> v1 = create_vertices_from_noise(0, 0, 300, 300);
+    std::vector<Vertex> v2 = create_vertices_from_noise(299, 0, 300, 300);
+
+    for (int i = 0; i < 300; i++)
     {
-      mesh.set_texture_pack(t_pack);
+      for (int j = 0; j < 300; j++)
+      {
+        auto m = (v1[300*(299-j) + i].position.y + v2[i + j*300].position.y) / 2;
+        v1[300*(299-j) + i].position.y = m;
+        v2[i + j*300].position.y = m;
+      }
+    }
+
+    map_mesh.push_back(create_mesh_from_noise(0, 0, 300, 300, v1));
+    map_mesh.push_back(create_mesh_from_noise(300, 0, 300, 300, v2));
+
+
+    std::cout << "Load vertices" << std::endl;
+
+    for (auto mesh: map_mesh)
+    {
+      mesh->set_texture_pack(t_pack);
     }
 
     //Entity
     std::vector<std::vector<Entity>> entities;
-    for (auto& mesh: map_mesh)
+    for (auto mesh: map_mesh)
     {
-      entities.push_back(create_entities_from_vertices(mesh.get_vertices()));
+      entities.emplace_back(create_entities_from_vertices(mesh->get_vertices()));
     }
 
     //Light
@@ -154,16 +172,16 @@ int start_opengl()
 
     	// Render terrain
     	TerrainRenderer tr(our_map_shader, projection, view, view_pos, map_light);
-      for (auto& mesh: map_mesh)
+      for (auto mesh: map_mesh)
       {
-        tr.render(mesh, t_pack);
+        tr.render(*mesh, t_pack);
       }
 
     	// Render entities
     	EntityRenderer z(our_model_shader, projection, view, view_pos, map_light);
       for (auto& ent: entities)
       {
-        z.render(ent);
+        //z.render(ent);
       }
 
     	// Display lamp

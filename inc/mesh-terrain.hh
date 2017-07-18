@@ -29,6 +29,7 @@ public:
 
     void draw(Shader shader) const;
     std::vector<Vertex> get_vertices() const;
+    std::vector<unsigned int> get_indices() const;
     TerrainTexturePack get_texture_pack() const;
     void set_texture_pack(TerrainTexturePack t);
 

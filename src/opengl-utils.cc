@@ -5,12 +5,58 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
     glViewport(0, 0, width, height);
 }
 
-MeshTerrain create_mesh_from_noise(int startZ, int startX, int lengthZ, int lengthX)
+MeshTerrain* create_mesh_from_noise(int startZ, int startX, int lengthZ, int lengthX)
+{
+    SimplexNoise noise_generator;
+    SimplexNoise noise_generator2;
+    std::vector<Vertex> vertices = create_vertices_from_noise(startZ, startX, lengthZ, lengthX);
+    std::vector<unsigned int> indices;
+
+    for (int z = 0; z < lengthZ - 1; ++z)
+    {
+    	for (int x = 0; x < lengthX - 1; ++x)
+    	{
+    	    int start = x + z * lengthZ;
+    	    indices.push_back(start);
+    	    indices.push_back(start + 1);
+    	    indices.push_back(start + lengthZ);
+    	    indices.push_back(start + 1);
+    	    indices.push_back(start + 1 + lengthZ);
+    	    indices.push_back(start + lengthZ);
+    	}
+    }
+
+    return new MeshTerrain(vertices, indices);
+}
+
+MeshTerrain* create_mesh_from_noise(int startZ, int startX, int lengthZ, int lengthX, std::vector<Vertex> vertices)
+{
+    SimplexNoise noise_generator;
+    SimplexNoise noise_generator2;
+    std::vector<unsigned int> indices;
+
+    for (int z = 0; z < lengthZ - 1; ++z)
+    {
+    	for (int x = 0; x < lengthX - 1; ++x)
+    	{
+    	    int start = x + z * lengthZ;
+    	    indices.push_back(start);
+    	    indices.push_back(start + 1);
+    	    indices.push_back(start + lengthZ);
+    	    indices.push_back(start + 1);
+    	    indices.push_back(start + 1 + lengthZ);
+    	    indices.push_back(start + lengthZ);
+    	}
+    }
+
+    return new MeshTerrain(vertices, indices);
+}
+
+std::vector<Vertex> create_vertices_from_noise(int startZ, int startX, int lengthZ, int lengthX)
 {
     SimplexNoise noise_generator;
     SimplexNoise noise_generator2;
     std::vector<Vertex> vertices;
-    std::vector<unsigned int> indices;
 
     for (int z = startZ; z < startZ + lengthZ; ++z)
     {
@@ -35,22 +81,7 @@ MeshTerrain create_mesh_from_noise(int startZ, int startX, int lengthZ, int leng
     	}
     }
 
-    for (int z = 0; z < lengthZ - 1; ++z)
-    {
-    	for (int x = 0; x < lengthX - 1; ++x)
-    	{
-    	    int start = x + z * lengthZ;
-    	    indices.push_back(start);
-    	    indices.push_back(start + 1);
-    	    indices.push_back(start + lengthZ);
-    	    indices.push_back(start + 1);
-    	    indices.push_back(start + 1 + lengthZ);
-    	    indices.push_back(start + lengthZ);
-    	}
-    }
-
-    MeshTerrain m(vertices, indices);
-    return m;
+    return vertices;
 }
 
 std::vector<Entity> create_entities_from_vertices(const std::vector<Vertex>& ve)
