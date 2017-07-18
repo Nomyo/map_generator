@@ -16,6 +16,17 @@
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 
 /**
+ * Check for borders to know where to create rivers
+ */
+void check_sea_border(const std::vector<std::vector<double>>& height_map, std::vector<int>& dir, int y, int x);
+
+/**
+ * Create rivers
+ */
+void create_river(const std::vector<std::vector<double>>& height_map, int y, int x, int count);
+
+
+/**
  * Perform perlin noise and build a mesh with it
  */
 MeshTerrain create_mesh_from_noise();
