@@ -128,13 +128,8 @@ int start_opengl()
     std::vector<MeshTerrain*> map_mesh;
     std::vector<std::vector<Vertex>> verts;
     std::thread t(manage_pool, &verts, camera);
-
-    //Entity
     std::vector<std::vector<Entity>> entities;
-    //for (auto mesh: map_mesh)
-    //{
-    //  entities.emplace_back(create_entities_from_vertices(mesh->get_vertices()));
-    //}
+
 
     //Light
     Light map_light(glm::vec3(150.0f, 200.0f, 150.0f),
@@ -163,6 +158,7 @@ int start_opengl()
       {
         auto m = create_mesh_from_noise(0, 0, 100, 100, v);
         m->set_texture_pack(t_pack);
+        entities.push_back(create_entities_from_vertices(m->get_vertices()));
         map_mesh.push_back(m);
       }
       verts.clear();
@@ -202,7 +198,7 @@ int start_opengl()
     	EntityRenderer z(our_model_shader, projection, view, view_pos, map_light);
       for (auto& ent: entities)
       {
-        //z.render(ent);
+        z.render(ent);
       }
 
     	// Display lamp

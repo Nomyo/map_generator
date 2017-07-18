@@ -123,8 +123,8 @@ std::vector<Entity> create_entities_from_vertices(const std::vector<Vertex>& ve)
     auto entities = std::vector<Entity>{};
     Model tree_model("textures/pine.obj", "textures/pine.png", "", false);
     Model grass_model("textures/grassModel.obj", "textures/grassTexture.png", "", false);
-    grass_model.set_fake_lighting(true);
     Model flower_model("textures/grassModel.obj", "textures/flower.png", "", false);
+    grass_model.set_fake_lighting(true);
     flower_model.set_fake_lighting(true);
 
     std::random_device rd;
