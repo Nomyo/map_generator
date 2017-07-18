@@ -44,20 +44,25 @@ void manage_pool(std::vector<std::vector<Vertex>>* verts, Camera* cam)
   int i = 0;
   std::vector<std::thread> threadPool;
   std::vector<std::pair<int, int>> alreadyLoad;
+  int lengthZ = 100;
+  int lengthX = 100;
 
   while(true)
   {
+    g_mutex.lock();
     glm::vec3 view_pos = cam->get_view_pos();
-    auto camPos = std::make_pair(((int)view_pos.z) / 300, ((int)view_pos.x) / 300);
+    g_mutex.unlock();
 
-    for (int i = -1; i <= 1; i++)
+    auto camPos = std::make_pair(((int)view_pos.z) / lengthZ, ((int)view_pos.x) / lengthX);
+
+    for (int i = -2; i <= 2; i++)
     {
-      for (int j = -1; j <= 1; j++)
+      for (int j = -2; j <= 2; j++)
       {
         if (std::find(alreadyLoad.begin(), alreadyLoad.end(), std::make_pair(camPos.first + i, camPos.second + j)) == alreadyLoad.end())
         {
           // not found so load
-          threadPool.push_back(std::thread(generate_chunk, verts, seed, (camPos.first + i)*299, (camPos.second + j)*299, 300, 300));
+          threadPool.push_back(std::thread(generate_chunk, verts, seed, (camPos.first + i)*(lengthZ - 1), (camPos.second + j)*(lengthX - 1), lengthZ, lengthX));
           alreadyLoad.push_back(std::make_pair(camPos.first + i, camPos.second + j));
         }
       }
@@ -69,7 +74,7 @@ void manage_pool(std::vector<std::vector<Vertex>>* verts, Camera* cam)
     threadPool.clear();
     i++;
 
-    std::this_thread::sleep_for(5s);
+    std::this_thread::sleep_for(1s);
   }
 }
 
@@ -89,11 +94,11 @@ int start_opengl()
     	return -1;
     }
 
-    auto& input = Input::get_instance();
+    //auto& input = Input::get_instance();
     auto camera = new Camera(glm::vec3(0.0f, 50.0f, 0.0f),
 			     glm::vec3(0.0f, 1.0f, 0.0f), 45.0f, 0.0f);
 
-    input.init(camera);
+    //input.init(camera);
 
     glfwMakeContextCurrent(window);
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
@@ -156,7 +161,7 @@ int start_opengl()
       g_mutex.lock();
       for (auto v: verts)
       {
-        auto m = create_mesh_from_noise(0, 0, 300, 300, v);
+        auto m = create_mesh_from_noise(0, 0, 100, 100, v);
         m->set_texture_pack(t_pack);
         map_mesh.push_back(m);
       }
@@ -171,7 +176,7 @@ int start_opengl()
 
     	// input
     	// -----
-    	input.process_input(window);
+    	//input.process_input(window);
 
     	// render
     	// ------
@@ -222,6 +227,7 @@ int start_opengl()
 
     	map_light.set_position(glm::vec3(inc ? light_pos.x + 1 : light_pos.x - 1,
     					 light_pos.y, light_pos.z));
+      camera->process_keyboard(Camera::Camera_movement::FORWARD, Input::deltaTime * 10.f);
 
     	glfwSwapBuffers(window);
     	glfwPollEvents();
