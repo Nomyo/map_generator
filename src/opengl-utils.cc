@@ -23,12 +23,15 @@ inline bool check_border(const std::vector<std::vector<double>>& height_map, siz
   return y <= 0 || x <= 0 || x >= height_map[0].size() - 1 || y >= height_map.size() - 1; 
 }
 
-void create_river(std::vector<std::vector<double>>& height_map, int y, int x, int count)
+void create_river(std::vector<std::vector<double>>& height_map,
+                  std::vector<std::vector<double>>& moist_map,
+                  int y, int x, int count)
 {
-  int new_height = 74;
+  int new_moist = 500;
   if (count <= 0 || check_border(height_map, y , x))
     return;
-  height_map[y][x] = new_height;
+  moist_map[y][x] = new_moist;
+  height_map[y][x] -= 5;
   int score = height_map[y][x + 1];
   int dir = 1;
   for (int i = 1; i < 4; ++i)
@@ -44,24 +47,24 @@ void create_river(std::vector<std::vector<double>>& height_map, int y, int x, in
     return;
   switch (dir) {
   case 1 :
-    height_map[y - 1][x] = new_height;
-    height_map[y + 1][x] = new_height;
-    create_river(height_map, y, x + 1, count - 1);
+    moist_map[y - 1][x] = new_moist;
+    moist_map[y + 1][x] = new_moist;
+    create_river(height_map, moist_map ,y, x + 1, count - 1);
     break;
   case 2 :
-    height_map[y - 1][x] = new_height;
-    height_map[y + 1][x] = new_height;
-    create_river(height_map, y, x - 1, count - 1);
+    moist_map[y - 1][x] = new_moist;
+    moist_map[y + 1][x] = new_moist;
+    create_river(height_map, moist_map, y, x - 1, count - 1);
     break;
   case 3 :
-    height_map[y][x - 1] = new_height;
-    height_map[y][x + 1] = new_height;
-    create_river(height_map, y + 1, x, count - 1);
+    moist_map[y][x - 1] = new_moist;
+    moist_map[y][x + 1] = new_moist;
+    create_river(height_map, moist_map,y + 1, x, count - 1);
     break;
   default:
-    height_map[y][x - 1] = new_height;
-    height_map[y][x + 1] = new_height;
-    create_river(height_map, y - 1, x, count - 1);
+    moist_map[y][x - 1] = new_moist;
+    moist_map[y][x + 1] = new_moist;
+    create_river(height_map, moist_map,y - 1, x, count - 1);
   }
 }
 
@@ -118,7 +121,7 @@ MeshTerrain create_mesh_from_noise()
       if (rand() == 0)
         {
           int len = rand2();
-          create_river(height_map, std::get<1>(b), std::get<0>(b), len);
+          create_river(height_map, moist_map, std::get<1>(b), std::get<0>(b), len);
         }
     }
     
@@ -140,7 +143,7 @@ MeshTerrain create_mesh_from_noise()
                                     blend_color});
         }
     }
-    
+  
   // set Indices
   for (int z = 0; z < 300 - 1; ++z)
     {
@@ -180,7 +183,9 @@ std::vector<Entity> create_entities_from_vertices(const std::vector<Vertex>& ve)
 
   auto rand = std::bind(distr, eng);
   auto rand2 = std::bind(distr2, eng);
-
+  /**
+   ** FIXME : Need to check for rivers.
+   **/
   for (auto vertex : ve)
     {
       if (vertex.position.y >= 22.0f)
@@ -252,12 +257,13 @@ unsigned int load_texturegl(const std::string& path)
 void set_color_from_noise(float height, float moisture,
                           glm::vec3& color, glm::vec3& blend_color)
 {
-  /*if (moisture >= 499)
+  /* River generation */
+  if (moisture >= 500)
     {
-      color = glm::vec3{0.0f, 0.0f, (1.0f / 255.0f) * 204.0f};
+      color = glm::vec3{0.0f, (1.0f / 255.0f) * 128.0f, (1.0f / 255.0f) * 255.0f};
       blend_color = glm::vec3{1.0f, 0.0f, 0.0f};
     }
-    else*/ if (height < 50) // dark water
+    else if (height < 50) // dark water
     {
       color = glm::vec3{0.0f, 0.0f, (1.0f / 255.0f) * 204.0f};
       blend_color = glm::vec3{1.0f, 0.0f, 0.0f};
