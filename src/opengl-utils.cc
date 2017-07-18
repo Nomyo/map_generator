@@ -31,8 +31,6 @@ MeshTerrain* create_mesh_from_noise(int startZ, int startX, int lengthZ, int len
 
 MeshTerrain* create_mesh_from_noise(int startZ, int startX, int lengthZ, int lengthX, std::vector<Vertex> vertices)
 {
-    SimplexNoise noise_generator;
-    SimplexNoise noise_generator2;
     std::vector<unsigned int> indices;
 
     for (int z = 0; z < lengthZ - 1; ++z)
@@ -56,6 +54,38 @@ std::vector<Vertex> create_vertices_from_noise(int startZ, int startX, int lengt
 {
     SimplexNoise noise_generator;
     SimplexNoise noise_generator2;
+    std::vector<Vertex> vertices;
+
+    for (int z = startZ; z < startZ + lengthZ; ++z)
+    {
+    	for (int x = startX; x < startX + lengthX; ++x)
+    	{
+    	    double scale = 0.003;
+    	    float p_noise =
+          noise_generator.sum_octave(16, x, z, 0.6, scale, 0, 255);
+    	    double scale2 = 0.005;
+    	    float m_noise =
+    		  noise_generator2.sum_octave(16, x, z, 0.6, scale2, 0, 255);
+
+    	    glm::vec3 color;
+    	    glm::vec3 blend_color;
+
+    	    set_color_from_noise(p_noise, m_noise, color, blend_color);
+
+    	    vertices.emplace_back(
+    		  Vertex{glm::vec3(x, (p_noise / 2.0f) * 0.5f , z),
+    			color, glm::vec2{x, z},
+    			blend_color});
+    	}
+    }
+
+    return vertices;
+}
+
+std::vector<Vertex> create_vertices_from_noise(int startZ, int startX, int lengthZ, int lengthX, int seed)
+{
+    SimplexNoise noise_generator(seed);
+    SimplexNoise noise_generator2(seed + 1);
     std::vector<Vertex> vertices;
 
     for (int z = startZ; z < startZ + lengthZ; ++z)

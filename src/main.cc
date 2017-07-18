@@ -6,6 +6,11 @@
 #include <iostream>
 #include <vector>
 #include <array>
+#include <thread>
+#include <chrono>
+#include <mutex>
+#include <utility>
+#include <algorithm>
 
 #include <camera.hh>
 #include <entity-renderer.hh>
@@ -20,30 +25,52 @@
 #include <model.hh>
 #include <terrain-renderer.hh>
 
-void do_noise(SDL_Window *window)
+std::mutex g_mutex;
+
+void generate_chunk(std::vector<std::vector<Vertex>>* vertices, int seed, int startZ, int startX, int lengthZ, int lengthX)
 {
-    //display_bmp("carte.bmp", window);
+  std::cout << startZ << "/" << startX << "/" << lengthZ << "/" << lengthX << std::endl;
+  auto r = create_vertices_from_noise(startZ, startX, lengthZ, lengthX, seed);
+  g_mutex.lock();
+  vertices->push_back(r);
+  g_mutex.unlock();
+}
 
-    SimplexNoise noise_generator;
-    uint32_t mat[1280][720] = { 0 };
+void manage_pool(std::vector<std::vector<Vertex>>* verts, Camera* cam)
+{
+  using namespace std::chrono_literals;
+  std::random_device rd; // obtain a random number from hardware
+  auto seed = rd();
+  int i = 0;
+  std::vector<std::thread> threadPool;
+  std::vector<std::pair<int, int>> alreadyLoad;
 
-    for (int i = 0; i < 1280; ++i)
-    	for (int j = 0; j < 720; ++j)
-    	{
-    	    double scale = 0.001;
-    	    int p_noise =
-    		noise_generator.sum_octave(16, i, j, 0.6, scale, 0, 255);
-    	    mat[i][j] = p_noise | (p_noise << 8) | (p_noise << 16);
-    	}
+  while(true)
+  {
+    glm::vec3 view_pos = cam->get_view_pos();
+    auto camPos = std::make_pair(((int)view_pos.z) / 300, ((int)view_pos.x) / 300);
 
-    auto surf = create_surface(1280, 720);
-    for (int i = 0; i < 1280; ++i)
-    	for (int j = 0; j < 720; ++j)
-    	{
-    	    put_pixel_color(surf, i, j, mat[i][j]);
-    	}
+    for (int i = -1; i <= 1; i++)
+    {
+      for (int j = -1; j <= 1; j++)
+      {
+        if (std::find(alreadyLoad.begin(), alreadyLoad.end(), std::make_pair(camPos.first + i, camPos.second + j)) == alreadyLoad.end())
+        {
+          // not found so load
+          threadPool.push_back(std::thread(generate_chunk, verts, seed, (camPos.first + i)*299, (camPos.second + j)*299, 300, 300));
+          alreadyLoad.push_back(std::make_pair(camPos.first + i, camPos.second + j));
+        }
+      }
+    }
+    for (auto& t: threadPool)
+    {
+      t.join();
+    }
+    threadPool.clear();
+    i++;
 
-    display_surface(surf, window);
+    std::this_thread::sleep_for(5s);
+  }
 }
 
 int start_opengl()
@@ -94,37 +121,15 @@ int start_opengl()
 			      TerrainTexture{load_texturegl("textures/rocky.jpg")});
 
     std::vector<MeshTerrain*> map_mesh;
-
-    std::vector<Vertex> v1 = create_vertices_from_noise(0, 0, 300, 300);
-    std::vector<Vertex> v2 = create_vertices_from_noise(299, 0, 300, 300);
-
-    for (int i = 0; i < 300; i++)
-    {
-      for (int j = 0; j < 300; j++)
-      {
-        auto m = (v1[300*(299-j) + i].position.y + v2[i + j*300].position.y) / 2;
-        v1[300*(299-j) + i].position.y = m;
-        v2[i + j*300].position.y = m;
-      }
-    }
-
-    map_mesh.push_back(create_mesh_from_noise(0, 0, 300, 300, v1));
-    map_mesh.push_back(create_mesh_from_noise(300, 0, 300, 300, v2));
-
-
-    std::cout << "Load vertices" << std::endl;
-
-    for (auto mesh: map_mesh)
-    {
-      mesh->set_texture_pack(t_pack);
-    }
+    std::vector<std::vector<Vertex>> verts;
+    std::thread t(manage_pool, &verts, camera);
 
     //Entity
     std::vector<std::vector<Entity>> entities;
-    for (auto mesh: map_mesh)
-    {
-      entities.emplace_back(create_entities_from_vertices(mesh->get_vertices()));
-    }
+    //for (auto mesh: map_mesh)
+    //{
+    //  entities.emplace_back(create_entities_from_vertices(mesh->get_vertices()));
+    //}
 
     //Light
     Light map_light(glm::vec3(150.0f, 200.0f, 150.0f),
@@ -147,6 +152,17 @@ int start_opengl()
 
     while (!glfwWindowShouldClose(window))
     {
+      // Process verts
+      g_mutex.lock();
+      for (auto v: verts)
+      {
+        auto m = create_mesh_from_noise(0, 0, 300, 300, v);
+        m->set_texture_pack(t_pack);
+        map_mesh.push_back(m);
+      }
+      verts.clear();
+      g_mutex.unlock();
+
     	// per-frame time logic
     	// --------------------
     	float currentFrame = glfwGetTime();
@@ -217,27 +233,5 @@ int start_opengl()
 
 int main(int argc, char *argv[])
 {
-
-    /**  SDL PART : OPEN WINDOW / PRINT NOISE AND PROCEDURAL RENDER  **/
-
-    // SDL_Window *window = window_init();
-    // SDL_GLContext contextOpenGL = SDL_GL_CreateContext(window);
-
-    // if (contextOpenGL == 0)
-    // {
-    // 	std::cout << SDL_GetError() << std::endl;
-    // 	SDL_DestroyWindow(window);
-    // 	SDL_Quit();
-
-    // 	return -1;
-    // }
-
-    // do_noise(window);
-    // wait_window_close();
-
-    // SDL_GL_DeleteContext(contextOpenGL);
-    // SDL_DestroyWindow(window);
-    // SDL_Quit();
-
     return start_opengl();
 }
