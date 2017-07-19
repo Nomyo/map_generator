@@ -10,6 +10,8 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#include "tools.hh"
+
 /**
  * Whenever the window size change this callback function executes
  */

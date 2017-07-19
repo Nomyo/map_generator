@@ -64,7 +64,7 @@ int start_opengl()
 
     auto& input = Input::get_instance();
     auto camera = new Camera(glm::vec3(0.0f, 50.0f, 0.0f),
-			     glm::vec3(0.0f, 1.0f, 0.0f), 45.0f, 0.0f);
+			     glm::vec3(0.0f, 1.0f, 0.0f), 45.0f, 0.f);
 
     input.init(camera);
 

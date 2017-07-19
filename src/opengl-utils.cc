@@ -77,13 +77,13 @@ MeshTerrain create_mesh_from_noise()
   std::vector<std::vector<double>> height_map;
   std::vector<std::vector<double>> moist_map;
    
-  for (int z = 0; z < 300; ++z)
+  for (int z = 0; z < S_HEIGHT; ++z)
     {
       double scale = 0.003;
       double scale2 = 0.005;       
       height_map.push_back(std::vector<double>());
       moist_map.push_back(std::vector<double>());
-      for (int x = 0; x < 300; ++x)
+      for (int x = 0; x < S_WIDTH; ++x)
         {
           height_map[z].push_back(noise_generator.sum_octave(16, x, z, 0.6, scale, 0, 255));
           moist_map[z].push_back(noise_generator2.sum_octave(16, x, z, 0.6, scale2, 0, 255));
@@ -95,9 +95,9 @@ MeshTerrain create_mesh_from_noise()
    **/
   std::vector<std::tuple<int, int>> borders;
   
-  for (int y = 1; y < 300 - 1; ++y)
+  for (int y = 1; y < S_HEIGHT - 1; ++y)
     {
-      for (int x = 1; x < 300 - 1; ++x)
+      for (int x = 1; x < S_WIDTH - 1; ++x)
         {
           double h = height_map[y][x];
           if (h < 50 || h >= 75)
@@ -126,9 +126,9 @@ MeshTerrain create_mesh_from_noise()
     }
     
   // set Height color
-  for (int z = 0; z < 300; ++z)
+  for (int z = 0; z < S_HEIGHT; ++z)
     {
-      for (int x = 0; x < 300; ++x)
+      for (int x = 0; x < S_WIDTH; ++x)
         {
           float p_noise = height_map[z][x];
           float m_noise = moist_map[z][x];
@@ -145,17 +145,17 @@ MeshTerrain create_mesh_from_noise()
     }
   
   // set Indices
-  for (int z = 0; z < 300 - 1; ++z)
+  for (int z = 0; z < S_HEIGHT - 1; ++z)
     {
-      for (int x = 0; x < 300 - 1; ++x)
+      for (int x = 0; x < S_WIDTH - 1; ++x)
         {
-          int start = x + z * 300;
+          int start = x + z * S_WIDTH;
           indices.push_back(start);
           indices.push_back(start + 1);
-          indices.push_back(start + 300);
+          indices.push_back(start + S_WIDTH); //FIXME
           indices.push_back(start + 1);
-          indices.push_back(start + 1 + 300);
-          indices.push_back(start + 300);
+          indices.push_back(start + 1 + S_WIDTH); //FIXME
+          indices.push_back(start + S_WIDTH); //FIXME
         }
     }
 
