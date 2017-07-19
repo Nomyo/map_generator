@@ -11,6 +11,7 @@
 #include <mutex>
 #include <utility>
 #include <algorithm>
+#include <stdlib.h>
 
 #include <camera.hh>
 #include <entity-renderer.hh>
@@ -29,16 +30,16 @@ std::mutex g_mutex;
 int chunkZ = 300;
 int chunkX = 300;
 
-void generate_chunk(std::vector<std::vector<Vertex>>* vertices, int seed, int startZ, int startX, int lengthZ, int lengthX)
+void generate_chunk(std::vector<std::pair<std::pair<int, int>, std::vector<Vertex>>>* vertices, int seed, int startZ, int startX, int lengthZ, int lengthX, std::pair<int,int> chunk)
 {
-  std::cout << startZ << "/" << startX << "/" << lengthZ << "/" << lengthX << std::endl;
+  //std::cout << startZ << "/" << startX << "/" << lengthZ << "/" << lengthX << std::endl;
   auto r = create_vertices_from_noise(startZ, startX, lengthZ, lengthX, seed);
   g_mutex.lock();
-  vertices->push_back(r);
+  vertices->push_back(std::make_pair(chunk, r));
   g_mutex.unlock();
 }
 
-void manage_pool(std::vector<std::vector<Vertex>>* verts, Camera* cam)
+void manage_pool(std::vector<std::pair<std::pair<int, int>, std::vector<Vertex>>>* verts, std::vector<std::pair<int, int>>* unload, Camera* cam)
 {
   using namespace std::chrono_literals;
   std::random_device rd; // obtain a random number from hardware
@@ -55,6 +56,21 @@ void manage_pool(std::vector<std::vector<Vertex>>* verts, Camera* cam)
 
     auto camPos = std::make_pair(((int)view_pos.z) / chunkZ, ((int)view_pos.x) / chunkX);
 
+    // Search for chunks out of cam scope
+    for (auto it = alreadyLoad.begin(); it != alreadyLoad.end();)
+    {
+        if (abs(it->first - camPos.first) > 2 || abs(it->second - camPos.second) > 2)
+        {
+          g_mutex.lock();
+          unload->push_back(*it);
+          g_mutex.unlock();
+          //std::cout << "Request remove of: " << it->first << "/" << it->second << std::endl;
+          it = alreadyLoad.erase(it);
+        } else {
+          it++;
+        }
+    }
+
     for (int i = -2; i <= 2; i++)
     {
       for (int j = -2; j <= 2; j++)
@@ -62,8 +78,9 @@ void manage_pool(std::vector<std::vector<Vertex>>* verts, Camera* cam)
         if (std::find(alreadyLoad.begin(), alreadyLoad.end(), std::make_pair(camPos.first + i, camPos.second + j)) == alreadyLoad.end())
         {
           // not found so load
-          threadPool.push_back(std::thread(generate_chunk, verts, seed, (camPos.first + i)*(chunkZ - 1), (camPos.second + j)*(chunkX - 1), chunkZ, chunkX));
-          alreadyLoad.push_back(std::make_pair(camPos.first + i, camPos.second + j));
+          auto c = std::make_pair(camPos.first + i, camPos.second + j);
+          threadPool.push_back(std::thread(generate_chunk, verts, seed, (camPos.first + i)*(chunkZ - 1), (camPos.second + j)*(chunkX - 1), chunkZ, chunkX, c));
+          alreadyLoad.push_back(c);
         }
       }
     }
@@ -126,10 +143,10 @@ int start_opengl()
 			      TerrainTexture{load_texturegl("textures/rocky.jpg")});
 
     std::vector<MeshTerrain*> map_mesh;
-    std::vector<std::vector<Vertex>> verts;
-    std::thread t(manage_pool, &verts, camera);
+    std::vector<std::pair<std::pair<int, int>, std::vector<Vertex>>> verts;
+    std::vector<std::pair<int, int>> unload;
+    std::thread t(manage_pool, &verts, &unload, camera);
     std::vector<std::vector<Entity>> entities;
-
 
     //Light
     Light map_light(glm::vec3(150.0f, 200.0f, 150.0f),
@@ -154,14 +171,39 @@ int start_opengl()
     {
       // Process verts
       g_mutex.lock();
-      for (auto v: verts)
+
+      //std::cout << "Currently loaded blocks:" << std::endl;
+      //for (auto c: map_mesh) {
+      //  std::cout << c->get_chunk().first << "/" << c->get_chunk().second << std::endl;
+      //}
+
+      for (auto& v: verts)
       {
-        auto m = create_mesh_from_noise(0, 0, chunkZ, chunkX, v);
+        auto m = create_mesh_from_noise(0, 0, chunkZ, chunkX, v.second);
         m->set_texture_pack(t_pack);
+        m->set_chunk(v.first);
+
         //entities.push_back(create_entities_from_vertices(m->get_vertices()));
         map_mesh.push_back(m);
       }
       verts.clear();
+
+      for (auto& u: unload)
+      {
+        for (auto it = map_mesh.begin(); it != map_mesh.end();)
+        {
+          if ((*it)->get_chunk() == u)
+          {
+            delete *it;
+            it = map_mesh.erase(it);
+            break;
+          } else {
+            it++;
+          }
+        }
+      }
+      unload.clear();
+
       g_mutex.unlock();
 
     	// per-frame time logic

@@ -32,6 +32,8 @@ public:
     std::vector<unsigned int> get_indices() const;
     TerrainTexturePack get_texture_pack() const;
     void set_texture_pack(TerrainTexturePack t);
+    void set_chunk(std::pair<int, int> chunk);
+    std::pair<int, int> get_chunk();
 
 private:
     void setup_mesh();
@@ -41,7 +43,7 @@ private:
     std::vector<unsigned int> indices_;
 
     TerrainTexturePack texture_pack_;
-
+    std::pair<int, int> chunk_;
     unsigned int VBO_;
     unsigned int EBO_;
     unsigned int VAO_;

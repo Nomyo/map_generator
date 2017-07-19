@@ -61,6 +61,16 @@ void MeshTerrain::set_texture_pack(TerrainTexturePack t)
     texture_pack_ = t;
 }
 
+void MeshTerrain::set_chunk(std::pair<int, int> chunk)
+{
+	chunk_ = chunk;
+}
+
+std::pair<int, int> MeshTerrain::get_chunk()
+{
+	return chunk_;
+}
+
 void MeshTerrain::setup_mesh()
 {
     glGenVertexArrays(1, &VAO_);
