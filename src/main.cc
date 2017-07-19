@@ -29,6 +29,50 @@
 std::mutex g_mutex;
 int chunkZ = 300;
 int chunkX = 300;
+float skyboxVertices[] = {
+    // positions
+    -1.0f,  1.0f, -1.0f,
+    -1.0f, -1.0f, -1.0f,
+     1.0f, -1.0f, -1.0f,
+     1.0f, -1.0f, -1.0f,
+     1.0f,  1.0f, -1.0f,
+    -1.0f,  1.0f, -1.0f,
+
+    -1.0f, -1.0f,  1.0f,
+    -1.0f, -1.0f, -1.0f,
+    -1.0f,  1.0f, -1.0f,
+    -1.0f,  1.0f, -1.0f,
+    -1.0f,  1.0f,  1.0f,
+    -1.0f, -1.0f,  1.0f,
+
+     1.0f, -1.0f, -1.0f,
+     1.0f, -1.0f,  1.0f,
+     1.0f,  1.0f,  1.0f,
+     1.0f,  1.0f,  1.0f,
+     1.0f,  1.0f, -1.0f,
+     1.0f, -1.0f, -1.0f,
+
+    -1.0f, -1.0f,  1.0f,
+    -1.0f,  1.0f,  1.0f,
+     1.0f,  1.0f,  1.0f,
+     1.0f,  1.0f,  1.0f,
+     1.0f, -1.0f,  1.0f,
+    -1.0f, -1.0f,  1.0f,
+
+    -1.0f,  1.0f, -1.0f,
+     1.0f,  1.0f, -1.0f,
+     1.0f,  1.0f,  1.0f,
+     1.0f,  1.0f,  1.0f,
+    -1.0f,  1.0f,  1.0f,
+    -1.0f,  1.0f, -1.0f,
+
+    -1.0f, -1.0f, -1.0f,
+    -1.0f, -1.0f,  1.0f,
+     1.0f, -1.0f, -1.0f,
+     1.0f, -1.0f, -1.0f,
+    -1.0f, -1.0f,  1.0f,
+     1.0f, -1.0f,  1.0f
+};
 
 void generate_chunk(std::vector<std::pair<std::pair<int, int>, std::vector<Vertex>>>* vertices, int seed, int startZ, int startX, int lengthZ, int lengthX, std::pair<int,int> chunk)
 {
@@ -93,6 +137,38 @@ void manage_pool(std::vector<std::pair<std::pair<int, int>, std::vector<Vertex>>
 
     std::this_thread::sleep_for(1s);
   }
+}
+
+unsigned int loadCubemap(std::vector<std::string> faces)
+{
+    unsigned int textureID;
+    glGenTextures(1, &textureID);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
+
+    int width, height, nrChannels;
+    for (unsigned int i = 0; i < faces.size(); i++)
+    {
+        unsigned char *data = stbi_load(faces[i].c_str(), &width, &height, &nrChannels, 0);
+        if (data)
+        {
+            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
+                         0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data
+            );
+            stbi_image_free(data);
+        }
+        else
+        {
+            std::cout << "Cubemap texture failed to load at path: " << faces[i] << std::endl;
+            stbi_image_free(data);
+        }
+    }
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+    return textureID;
 }
 
 int start_opengl()
@@ -167,6 +243,32 @@ int start_opengl()
     bool inc = false;
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
+    std::vector<std::string> faces
+    {
+        "textures/right.jpg",
+        "textures/left.jpg",
+        "textures/top.jpg",
+        "textures/bottom.jpg",
+        "textures/back.jpg",
+        "textures/front.jpg"
+    };
+    unsigned int cubemapTexture = loadCubemap(faces);
+
+    // build and compile shaders
+    // -------------------------
+    Shader skyboxShader("shaders/skybox.vs", "shaders/skybox.fs");
+    // skybox VAO
+    unsigned int skyboxVAO, skyboxVBO;
+    glGenVertexArrays(1, &skyboxVAO);
+    glGenBuffers(1, &skyboxVBO);
+    glBindVertexArray(skyboxVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, skyboxVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(skyboxVertices), &skyboxVertices, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    skyboxShader.use();
+    skyboxShader.setInt("skybox", 0);
+
     while (!glfwWindowShouldClose(window))
     {
       // Process verts
@@ -183,7 +285,7 @@ int start_opengl()
         m->set_texture_pack(t_pack);
         m->set_chunk(v.first);
 
-        //entities.push_back(create_entities_from_vertices(m->get_vertices()));
+        entities.push_back(create_entities_from_vertices(m->get_vertices()));
         map_mesh.push_back(m);
       }
       verts.clear();
@@ -223,10 +325,9 @@ int start_opengl()
     	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     	// activate shader for map mesh ! !
-
     	glm::mat4 view = camera->get_view_matrix();
     	glm::mat4 projection = glm::perspective(glm::radians(camera->get_zoom()),
-    	    (float)Input::SCR_WIDTH / (float)Input::SCR_HEIGHT, 0.1f, 650.0f);
+    	    (float)Input::SCR_WIDTH / (float)Input::SCR_HEIGHT, 0.1f, 1000.0f);
     	glm::vec3 view_pos = camera->get_view_pos();
 
     	// Render terrain
@@ -266,6 +367,19 @@ int start_opengl()
     	map_light.set_position(glm::vec3(inc ? light_pos.x + 1 : light_pos.x - 1,
     					 light_pos.y, light_pos.z));
       //camera->process_keyboard(Camera::Camera_movement::FORWARD, Input::deltaTime * 10.f);
+
+      glDepthFunc(GL_LEQUAL);  // change depth function so depth test passes when values are equal to depth buffer's content
+      skyboxShader.use();
+      view = glm::mat4(glm::mat3(camera->get_view_matrix())); // remove translation from the view matrix
+      skyboxShader.setMat4("view", view);
+      skyboxShader.setMat4("projection", projection);
+
+      glBindVertexArray(skyboxVAO);
+      glActiveTexture(GL_TEXTURE0);
+      glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
+      glDrawArrays(GL_TRIANGLES, 0, 36);
+      glBindVertexArray(0);
+      glDepthFunc(GL_LESS); // set depth function back to default
 
     	glfwSwapBuffers(window);
     	glfwPollEvents();

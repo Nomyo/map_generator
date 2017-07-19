@@ -57,27 +57,27 @@ void Camera::process_keyboard(Camera_movement dir, float delta_time)
     float velocity = movement_speed_ * boost_factor_ * delta_time;
 
     if (dir == Camera_movement::FORWARD)
-	position_ += target_ * velocity;
+	   position_ += target_ * velocity;
     if (dir == Camera_movement::BACKWARD)
-	position_ -= target_ * velocity;
+	   position_ -= target_ * velocity;
     if (dir == Camera_movement::LEFT)
-	position_ -= right_ * velocity;
+	   position_ -= right_ * velocity;
     if (dir == Camera_movement::RIGHT)
-	position_ += right_ * velocity;
+	   position_ += right_ * velocity;
     if (dir == Camera_movement::UP)
-	position_ += world_up_ * velocity;
+	   position_ += world_up_ * velocity;
     if (dir == Camera_movement::DOWN)
-	position_ -= world_up_ * velocity;
+	   position_ -= world_up_ * velocity;
 }
 
 void Camera::process_mouse_scroll(float yoffset)
 {
     if (zoom_ >= 1.0f && zoom_ <= 45.0f)
-	zoom_ -= yoffset;
+	   zoom_ -= yoffset;
     else if (zoom_ < 1.0f)
-	zoom_ = 1.0f;
+	   zoom_ = 1.0f;
     else if (zoom_ > 45.0f)
-	zoom_ = 45.0f;
+	   zoom_ = 45.0f;
 }
 
 void Camera::process_mouse_movement(float xoffset, float yoffset,
@@ -92,10 +92,10 @@ void Camera::process_mouse_movement(float xoffset, float yoffset,
     // Make sure that when pitch is out of bounds, screen doesn't get flipped
     if (constrain_pitch)
     {
-	if (pitch_ > 89.0f)
-	    pitch_ = 89.0f;
-	else if (pitch_ < -89.0f)
-	    pitch_ = -89.0f;
+    	if (pitch_ > 89.0f)
+    	    pitch_ = 89.0f;
+    	else if (pitch_ < -89.0f)
+    	    pitch_ = -89.0f;
     }
 
     update_vectors();

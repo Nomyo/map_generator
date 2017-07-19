@@ -129,8 +129,8 @@ std::vector<Entity> create_entities_from_vertices(const std::vector<Vertex>& ve)
 
     std::random_device rd;
     std::mt19937 eng(rd());
-    std::uniform_int_distribution<> distr(0, 500);
-    std::uniform_int_distribution<> distr2(0, 3000);
+    std::uniform_int_distribution<> distr(0, 5000);
+    std::uniform_int_distribution<> distr2(0, 30000);
 
     auto rand = std::bind(distr, eng);
     auto rand2 = std::bind(distr2, eng);
@@ -144,15 +144,15 @@ std::vector<Entity> create_entities_from_vertices(const std::vector<Vertex>& ve)
     	    {
       	    case 1: // FIXME SHOULD CARE ABOUT MAP ROTATION
           		entities.push_back(Entity{tree_model, vertex.position
-          			    ,glm::vec3(1.0f, 0.0f, 0.0f), 0.30f});
+          			    ,glm::vec3(1.0f, 0.0f, 0.0f), 0.10f});
           		break;
           	case 2:
           		entities.push_back(Entity{tree_model, vertex.position
-          			    ,glm::vec3(1.0f, 0.0f, 0.0f), 0.45f});
+          			    ,glm::vec3(1.0f, 0.0f, 0.0f), 0.15f});
           		break;
           	case 3:
           		entities.push_back(Entity{tree_model, vertex.position
-          			    ,glm::vec3(1.0f, 0.0f, 0.0f), 0.60f});
+          			    ,glm::vec3(1.0f, 0.0f, 0.0f), 0.20f});
           	default:
           		break;
     	    }

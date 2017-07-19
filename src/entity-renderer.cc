@@ -16,8 +16,8 @@ void EntityRenderer::render(const std::vector<Entity>& entities)
 {
     for (auto e : entities)
     {
-	prepare_instance(e);
-        e.get_model().draw(shader_);
+			prepare_instance(e);
+      e.get_model().draw(shader_);
     }
 }
 
@@ -30,8 +30,8 @@ void EntityRenderer::prepare_instance(const Entity& entity)
     //FIXME rotation
     model = glm::rotate(model, glm::radians(0.0f), entity.get_rotation());
     if (entity.get_model().has_fake_lighting())
-	shader_.setFloat("fake_lighting", 1.0f);
+			shader_.setFloat("fake_lighting", 1.0f);
     else
-	shader_.setFloat("fake_lighting", 0.0f);
+			shader_.setFloat("fake_lighting", 0.0f);
     shader_.setMat4("model", model);
 }
