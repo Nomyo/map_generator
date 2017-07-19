@@ -254,10 +254,8 @@ int start_opengl()
     };
     unsigned int cubemapTexture = loadCubemap(faces);
 
-    // build and compile shaders
-    // -------------------------
+    // Skybox shader + load
     Shader skyboxShader("shaders/skybox.vs", "shaders/skybox.fs");
-    // skybox VAO
     unsigned int skyboxVAO, skyboxVBO;
     glGenVertexArrays(1, &skyboxVAO);
     glGenBuffers(1, &skyboxVBO);
@@ -273,11 +271,6 @@ int start_opengl()
     {
       // Process verts
       g_mutex.lock();
-
-      //std::cout << "Currently loaded blocks:" << std::endl;
-      //for (auto c: map_mesh) {
-      //  std::cout << c->get_chunk().first << "/" << c->get_chunk().second << std::endl;
-      //}
 
       for (auto& v: verts)
       {
@@ -368,9 +361,9 @@ int start_opengl()
     					 light_pos.y, light_pos.z));
       //camera->process_keyboard(Camera::Camera_movement::FORWARD, Input::deltaTime * 10.f);
 
-      glDepthFunc(GL_LEQUAL);  // change depth function so depth test passes when values are equal to depth buffer's content
+      glDepthFunc(GL_LEQUAL);
       skyboxShader.use();
-      view = glm::mat4(glm::mat3(camera->get_view_matrix())); // remove translation from the view matrix
+      view = glm::mat4(glm::mat3(camera->get_view_matrix()));
       skyboxShader.setMat4("view", view);
       skyboxShader.setMat4("projection", projection);
 
@@ -379,7 +372,7 @@ int start_opengl()
       glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
       glDrawArrays(GL_TRIANGLES, 0, 36);
       glBindVertexArray(0);
-      glDepthFunc(GL_LESS); // set depth function back to default
+      glDepthFunc(GL_LESS);
 
     	glfwSwapBuffers(window);
     	glfwPollEvents();
