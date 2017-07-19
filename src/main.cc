@@ -26,6 +26,8 @@
 #include <terrain-renderer.hh>
 
 std::mutex g_mutex;
+int chunkZ = 300;
+int chunkX = 300;
 
 void generate_chunk(std::vector<std::vector<Vertex>>* vertices, int seed, int startZ, int startX, int lengthZ, int lengthX)
 {
@@ -44,8 +46,6 @@ void manage_pool(std::vector<std::vector<Vertex>>* verts, Camera* cam)
   int i = 0;
   std::vector<std::thread> threadPool;
   std::vector<std::pair<int, int>> alreadyLoad;
-  int lengthZ = 100;
-  int lengthX = 100;
 
   while(true)
   {
@@ -53,7 +53,7 @@ void manage_pool(std::vector<std::vector<Vertex>>* verts, Camera* cam)
     glm::vec3 view_pos = cam->get_view_pos();
     g_mutex.unlock();
 
-    auto camPos = std::make_pair(((int)view_pos.z) / lengthZ, ((int)view_pos.x) / lengthX);
+    auto camPos = std::make_pair(((int)view_pos.z) / chunkZ, ((int)view_pos.x) / chunkX);
 
     for (int i = -2; i <= 2; i++)
     {
@@ -62,7 +62,7 @@ void manage_pool(std::vector<std::vector<Vertex>>* verts, Camera* cam)
         if (std::find(alreadyLoad.begin(), alreadyLoad.end(), std::make_pair(camPos.first + i, camPos.second + j)) == alreadyLoad.end())
         {
           // not found so load
-          threadPool.push_back(std::thread(generate_chunk, verts, seed, (camPos.first + i)*(lengthZ - 1), (camPos.second + j)*(lengthX - 1), lengthZ, lengthX));
+          threadPool.push_back(std::thread(generate_chunk, verts, seed, (camPos.first + i)*(chunkZ - 1), (camPos.second + j)*(chunkX - 1), chunkZ, chunkX));
           alreadyLoad.push_back(std::make_pair(camPos.first + i, camPos.second + j));
         }
       }
@@ -94,11 +94,11 @@ int start_opengl()
     	return -1;
     }
 
-    //auto& input = Input::get_instance();
+    auto& input = Input::get_instance();
     auto camera = new Camera(glm::vec3(0.0f, 50.0f, 0.0f),
 			     glm::vec3(0.0f, 1.0f, 0.0f), 45.0f, 0.0f);
 
-    //input.init(camera);
+    input.init(camera);
 
     glfwMakeContextCurrent(window);
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
@@ -156,9 +156,9 @@ int start_opengl()
       g_mutex.lock();
       for (auto v: verts)
       {
-        auto m = create_mesh_from_noise(0, 0, 100, 100, v);
+        auto m = create_mesh_from_noise(0, 0, chunkZ, chunkX, v);
         m->set_texture_pack(t_pack);
-        entities.push_back(create_entities_from_vertices(m->get_vertices()));
+        //entities.push_back(create_entities_from_vertices(m->get_vertices()));
         map_mesh.push_back(m);
       }
       verts.clear();
@@ -172,7 +172,7 @@ int start_opengl()
 
     	// input
     	// -----
-    	//input.process_input(window);
+    	input.process_input(window);
 
     	// render
     	// ------
@@ -223,7 +223,7 @@ int start_opengl()
 
     	map_light.set_position(glm::vec3(inc ? light_pos.x + 1 : light_pos.x - 1,
     					 light_pos.y, light_pos.z));
-      camera->process_keyboard(Camera::Camera_movement::FORWARD, Input::deltaTime * 10.f);
+      //camera->process_keyboard(Camera::Camera_movement::FORWARD, Input::deltaTime * 10.f);
 
     	glfwSwapBuffers(window);
     	glfwPollEvents();
