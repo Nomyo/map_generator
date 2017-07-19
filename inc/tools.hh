@@ -1,4 +1,4 @@
 #pragma once
 
-#define S_WIDTH  300
-#define S_HEIGHT 300
+#define M_WIDTH  300
+#define M_HEIGHT 300
