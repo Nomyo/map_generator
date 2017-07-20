@@ -107,7 +107,28 @@ std::vector<Vertex> create_vertices_from_noise(int startZ, int startX, int lengt
     	    vertices.emplace_back(
     		  Vertex{glm::vec3(x, (p_noise / 2.0f) * 0.5f , z),
     			color, glm::vec2{x, z},
-    			blend_color});
+          blend_color});
+    	}
+    }
+
+    return vertices;
+}
+
+std::vector<Vertex> create_vertices_from_flat(int startZ, int startX, int lengthZ, int lengthX, int y)
+{
+    std::vector<Vertex> vertices;
+
+    for (int z = startZ; z < startZ + lengthZ; z += 1)
+    {
+    	for (int x = startX; x < startX + lengthX; x += 1)
+    	{
+    	    glm::vec3 color{1.f};
+    	    glm::vec3 blend_color{1.f};
+
+    	    vertices.emplace_back(
+    		  Vertex{glm::vec3(x, y , z),
+    			color, glm::vec2{x, z},
+          blend_color});
     	}
     }
 

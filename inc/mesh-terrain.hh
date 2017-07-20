@@ -37,12 +37,15 @@ public:
     std::pair<int, int> get_chunk();
     void set_entities(std::vector<Entity*> entities);
     std::vector<Entity*> get_entities();
+    void set_water(MeshTerrain* waterMesh);
+    MeshTerrain* get_water();
     void setup_mesh();
 
 private:
     std::vector<Vertex> vertices_;
     std::vector<unsigned int> indices_;
     std::vector<Entity*> entities_;
+    MeshTerrain* waterMesh_;
 
     TerrainTexturePack* texture_pack_;
     std::pair<int, int> chunk_;

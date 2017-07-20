@@ -81,6 +81,16 @@ std::vector<Entity*> MeshTerrain::get_entities()
 	return entities_;
 }
 
+void MeshTerrain::set_water(MeshTerrain* waterMesh)
+{
+	waterMesh_ = waterMesh;
+}
+
+MeshTerrain* MeshTerrain::get_water()
+{
+	return waterMesh_;
+}
+
 void MeshTerrain::setup_mesh()
 {
     glGenVertexArrays(1, &VAO_);

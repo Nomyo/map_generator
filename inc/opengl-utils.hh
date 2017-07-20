@@ -23,6 +23,7 @@ MeshTerrain* create_mesh_from_noise(int startZ, int startX, int lengthZ, int len
 MeshTerrain* create_mesh_from_noise(int startZ, int startX, int lengthZ, int lengthX, std::vector<Vertex> vertices);
 std::vector<Vertex> create_vertices_from_noise(int startZ, int startX, int lengthZ, int lengthX);
 std::vector<Vertex> create_vertices_from_noise(int startZ, int startX, int lengthZ, int lengthX, int seed);
+std::vector<Vertex> create_vertices_from_flat(int startZ, int startX, int lengthZ, int lengthX, int y);
 
 /**
  * Fill up and entity for now randomly with trees

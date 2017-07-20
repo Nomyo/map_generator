@@ -7,8 +7,11 @@ void generate_chunk(std::vector<MeshTerrain*>* meshes, int seed, int startZ, int
   auto m = create_mesh_from_noise(0, 0, chunkZ, chunkX, r);
   m->set_chunk(chunk);
 
+  auto tmp1 = create_vertices_from_flat(startZ, startX, lengthZ, lengthX, 19);
+  auto waterMesh = create_mesh_from_noise(0, 0, chunkZ, chunkX, tmp1);
 
   g_mutex.lock();
+  m->set_water(waterMesh);
   m->set_entities(create_entities_from_vertices(m->get_vertices(), models));
 
   meshes->push_back(m);
@@ -23,6 +26,7 @@ void manage_pool(std::vector<MeshTerrain*>* meshes, std::vector<std::pair<int, i
   int i = 0;
   std::vector<std::thread> threadPool;
   std::vector<std::pair<int, int>> alreadyLoad;
+  int size = 1;
 
   while(true)
   {
@@ -35,7 +39,7 @@ void manage_pool(std::vector<MeshTerrain*>* meshes, std::vector<std::pair<int, i
     // Search for chunks out of cam scope
     for (auto it = alreadyLoad.begin(); it != alreadyLoad.end();)
     {
-        if (abs(it->first - camPos.first) > 2 || abs(it->second - camPos.second) > 2)
+        if (abs(it->first - camPos.first) > size || abs(it->second - camPos.second) > size)
         {
           g_mutex.lock();
           unload->push_back(*it);
@@ -47,9 +51,9 @@ void manage_pool(std::vector<MeshTerrain*>* meshes, std::vector<std::pair<int, i
         }
     }
 
-    for (int i = -2; i <= 2; i++)
+    for (int i = -size; i <= size; i++)
     {
-      for (int j = -2; j <= 2; j++)
+      for (int j = -size; j <= size; j++)
       {
         if (std::find(alreadyLoad.begin(), alreadyLoad.end(), std::make_pair(camPos.first + i, camPos.second + j)) == alreadyLoad.end())
         {
@@ -207,14 +211,32 @@ int start_opengl()
     skyboxShader.use();
     skyboxShader.setInt("skybox", 0);
 
+    // water tests
+    Shader waterShader("shaders/water.vs", "shaders/water.fs");
+    unsigned int waterVAO, waterVBO;
+    glGenVertexArrays(1, &waterVAO);
+    glGenBuffers(1, &waterVBO);
+    glBindVertexArray(waterVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, waterVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(waterVertices), &waterVertices, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+
+    float timer = 0.f;
+
     while (!glfwWindowShouldClose(window))
     {
+      timer += 0.05f;
+
       // Process verts
       g_mutex.lock();
       for (auto& m: meshes)
       {
         m->set_texture_pack(t_pack);
         m->setup_mesh();
+        m->get_water()->set_texture_pack(t_pack);
+        m->get_water()->setup_mesh();
+
         map_mesh.push_back(m);
       }
       meshes.clear();
@@ -279,11 +301,32 @@ int start_opengl()
     	glm::mat4 model;
     	model = glm::translate(model, map_light.get_position());
     	model = glm::scale(model, glm::vec3(3.0f)); // a smaller cube
-            our_lamp_shader.setMat4("model", model);
+      our_lamp_shader.setMat4("model", model);
 
 
     	glBindVertexArray(lightVAO);
     	glDrawArrays(GL_TRIANGLES, 0, 36);
+
+      waterShader.use();
+      waterShader.setFloat("time", timer);
+      waterShader.setMat4("projection", projection);
+      waterShader.setMat4("view", view);
+      glm::mat4 model2;
+      model2 = glm::translate(model2, glm::vec3(0.0f, 0.0f, 0.0f));
+      model2 = glm::rotate(model2, glm::radians(0.0f),
+  			glm::vec3(1.0f, 0.0f, 0.0f));
+      waterShader.setMat4("model", model2);
+
+      // Enable blending
+      glEnable(GL_BLEND);
+      glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+      for (auto mesh: map_mesh)
+      {
+        mesh->get_water()->draw(waterShader);
+      }
+
+      //glBindVertexArray(waterVAO);
+    	//glDrawArrays(GL_TRIANGLES, 0, 9);
 
     	// update sun pos
     	auto light_pos = map_light.get_position();

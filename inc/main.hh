@@ -131,3 +131,14 @@ float skyboxVertices[] = {
     -1.0f, -1.0f,  1.0f,
      1.0f, -1.0f,  1.0f
 };
+
+float y = 19.f;
+float waterVertices[] = {
+    // positions
+    0.f,  y, 0.f,
+    300.f, y, 0.f,
+    0.f, y, 300.f,
+    0.f, y, 300.f,
+    300.f,  y, 300.f,
+    300.f, y, 0.f
+};
