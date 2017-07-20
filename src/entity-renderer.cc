@@ -12,24 +12,24 @@ EntityRenderer::EntityRenderer(Shader shader, glm::mat4 projection_mat,
     shader_.setVec3("skyColour", glm::vec3(1.0f, 1.0f, 1.0f));
 }
 
-void EntityRenderer::render(const std::vector<Entity>& entities)
+void EntityRenderer::render(const std::vector<Entity*>& entities)
 {
     for (auto e : entities)
     {
 			prepare_instance(e);
-      e.get_model().draw(shader_);
+      e->get_model()->draw(shader_);
     }
 }
 
-void EntityRenderer::prepare_instance(const Entity& entity)
+void EntityRenderer::prepare_instance(const Entity* entity)
 {
     glm::mat4 model;
-    model = glm::translate(model, entity.get_position());
-    model = glm::scale(model, glm::vec3(entity.get_scale()));
+    model = glm::translate(model, entity->get_position());
+    model = glm::scale(model, glm::vec3(entity->get_scale()));
 
     //FIXME rotation
-    model = glm::rotate(model, glm::radians(0.0f), entity.get_rotation());
-    if (entity.get_model().has_fake_lighting())
+    model = glm::rotate(model, glm::radians(0.0f), entity->get_rotation());
+    if (entity->get_model()->has_fake_lighting())
 			shader_.setFloat("fake_lighting", 1.0f);
     else
 			shader_.setFloat("fake_lighting", 0.0f);

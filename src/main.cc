@@ -1,89 +1,21 @@
-#include <glad/glad.h>
-#include "GLFW/glfw3.h"
-#include <SDL2/SDL.h>
-#include <glm/glm.hpp>
-
-#include <iostream>
-#include <vector>
-#include <array>
-#include <thread>
-#include <chrono>
-#include <mutex>
-#include <utility>
-#include <algorithm>
-#include <stdlib.h>
-
-#include <camera.hh>
-#include <entity-renderer.hh>
-#include <input.hh>
-#include <opengl-utils.hh>
-#include <shader_m.hh>
-#include <stb_image.h>
-#include <utils.hh>
-#include <mesh-terrain.hh>
-#include <mesh-texture.hh>
 #include <main.hh>
-#include <model.hh>
-#include <terrain-renderer.hh>
 
-std::mutex g_mutex;
-int chunkZ = 300;
-int chunkX = 300;
-float skyboxVertices[] = {
-    // positions
-    -1.0f,  1.0f, -1.0f,
-    -1.0f, -1.0f, -1.0f,
-     1.0f, -1.0f, -1.0f,
-     1.0f, -1.0f, -1.0f,
-     1.0f,  1.0f, -1.0f,
-    -1.0f,  1.0f, -1.0f,
-
-    -1.0f, -1.0f,  1.0f,
-    -1.0f, -1.0f, -1.0f,
-    -1.0f,  1.0f, -1.0f,
-    -1.0f,  1.0f, -1.0f,
-    -1.0f,  1.0f,  1.0f,
-    -1.0f, -1.0f,  1.0f,
-
-     1.0f, -1.0f, -1.0f,
-     1.0f, -1.0f,  1.0f,
-     1.0f,  1.0f,  1.0f,
-     1.0f,  1.0f,  1.0f,
-     1.0f,  1.0f, -1.0f,
-     1.0f, -1.0f, -1.0f,
-
-    -1.0f, -1.0f,  1.0f,
-    -1.0f,  1.0f,  1.0f,
-     1.0f,  1.0f,  1.0f,
-     1.0f,  1.0f,  1.0f,
-     1.0f, -1.0f,  1.0f,
-    -1.0f, -1.0f,  1.0f,
-
-    -1.0f,  1.0f, -1.0f,
-     1.0f,  1.0f, -1.0f,
-     1.0f,  1.0f,  1.0f,
-     1.0f,  1.0f,  1.0f,
-    -1.0f,  1.0f,  1.0f,
-    -1.0f,  1.0f, -1.0f,
-
-    -1.0f, -1.0f, -1.0f,
-    -1.0f, -1.0f,  1.0f,
-     1.0f, -1.0f, -1.0f,
-     1.0f, -1.0f, -1.0f,
-    -1.0f, -1.0f,  1.0f,
-     1.0f, -1.0f,  1.0f
-};
-
-void generate_chunk(std::vector<std::pair<std::pair<int, int>, std::vector<Vertex>>>* vertices, int seed, int startZ, int startX, int lengthZ, int lengthX, std::pair<int,int> chunk)
+void generate_chunk(std::vector<MeshTerrain*>* meshes, int seed, int startZ, int startX, int lengthZ, int lengthX, std::pair<int,int> chunk, std::vector<Model*>* models)
 {
   //std::cout << startZ << "/" << startX << "/" << lengthZ << "/" << lengthX << std::endl;
   auto r = create_vertices_from_noise(startZ, startX, lengthZ, lengthX, seed);
+  auto m = create_mesh_from_noise(0, 0, chunkZ, chunkX, r);
+  m->set_chunk(chunk);
+
+
   g_mutex.lock();
-  vertices->push_back(std::make_pair(chunk, r));
+  m->set_entities(create_entities_from_vertices(m->get_vertices(), models));
+
+  meshes->push_back(m);
   g_mutex.unlock();
 }
 
-void manage_pool(std::vector<std::pair<std::pair<int, int>, std::vector<Vertex>>>* verts, std::vector<std::pair<int, int>>* unload, Camera* cam)
+void manage_pool(std::vector<MeshTerrain*>* meshes, std::vector<std::pair<int, int>>* unload, Camera* cam, std::vector<Model*>* models)
 {
   using namespace std::chrono_literals;
   std::random_device rd; // obtain a random number from hardware
@@ -123,7 +55,7 @@ void manage_pool(std::vector<std::pair<std::pair<int, int>, std::vector<Vertex>>
         {
           // not found so load
           auto c = std::make_pair(camPos.first + i, camPos.second + j);
-          threadPool.push_back(std::thread(generate_chunk, verts, seed, (camPos.first + i)*(chunkZ - 1), (camPos.second + j)*(chunkX - 1), chunkZ, chunkX, c));
+          threadPool.push_back(std::thread(generate_chunk, meshes, seed, (camPos.first + i)*(chunkZ - 1), (camPos.second + j)*(chunkX - 1), chunkZ, chunkX, c, models));
           alreadyLoad.push_back(c);
         }
       }
@@ -219,10 +151,18 @@ int start_opengl()
 			      TerrainTexture{load_texturegl("textures/rocky.jpg")});
 
     std::vector<MeshTerrain*> map_mesh;
-    std::vector<std::pair<std::pair<int, int>, std::vector<Vertex>>> verts;
+    std::vector<MeshTerrain*> meshes;
     std::vector<std::pair<int, int>> unload;
-    std::thread t(manage_pool, &verts, &unload, camera);
-    std::vector<std::vector<Entity>> entities;
+    std::vector<Model*> models
+    {
+      new Model("textures/pine.obj", "textures/pine.png", "", false),
+      new Model("textures/grassModel.obj", "textures/grassTexture.png", "", false),
+      new Model("textures/grassModel.obj", "textures/flower.png", "", false)
+    };
+    models.at(1)->set_fake_lighting(true);
+    models.at(2)->set_fake_lighting(true);
+
+    std::thread t(manage_pool, &meshes, &unload, camera, &models);
 
     //Light
     Light map_light(glm::vec3(150.0f, 200.0f, 150.0f),
@@ -271,17 +211,13 @@ int start_opengl()
     {
       // Process verts
       g_mutex.lock();
-
-      for (auto& v: verts)
+      for (auto& m: meshes)
       {
-        auto m = create_mesh_from_noise(0, 0, chunkZ, chunkX, v.second);
         m->set_texture_pack(t_pack);
-        m->set_chunk(v.first);
-
-        entities.push_back(create_entities_from_vertices(m->get_vertices()));
+        m->setup_mesh();
         map_mesh.push_back(m);
       }
-      verts.clear();
+      meshes.clear();
 
       for (auto& u: unload)
       {
@@ -325,16 +261,11 @@ int start_opengl()
 
     	// Render terrain
     	TerrainRenderer tr(our_map_shader, projection, view, view_pos, map_light);
+      EntityRenderer z(our_model_shader, projection, view, view_pos, map_light);
       for (auto mesh: map_mesh)
       {
         tr.render(*mesh, t_pack);
-      }
-
-    	// Render entities
-    	EntityRenderer z(our_model_shader, projection, view, view_pos, map_light);
-      for (auto& ent: entities)
-      {
-        z.render(ent);
+        z.render(mesh->get_entities());
       }
 
     	// Display lamp

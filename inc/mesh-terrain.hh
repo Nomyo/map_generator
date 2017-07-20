@@ -10,6 +10,7 @@
 
 #include <shader_m.hh>
 #include <terrain-texture-pack.hh>
+#include <entity-renderer.hh>
 
 struct Vertex
 {
@@ -34,13 +35,14 @@ public:
     void set_texture_pack(TerrainTexturePack t);
     void set_chunk(std::pair<int, int> chunk);
     std::pair<int, int> get_chunk();
-
-private:
+    void set_entities(std::vector<Entity*> entities);
+    std::vector<Entity*> get_entities();
     void setup_mesh();
 
 private:
     std::vector<Vertex> vertices_;
     std::vector<unsigned int> indices_;
+    std::vector<Entity*> entities_;
 
     TerrainTexturePack texture_pack_;
     std::pair<int, int> chunk_;

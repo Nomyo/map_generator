@@ -9,6 +9,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <entity-renderer.hh>
 
 /**
  * Whenever the window size change this callback function executes
@@ -26,7 +27,7 @@ std::vector<Vertex> create_vertices_from_noise(int startZ, int startX, int lengt
 /**
  * Fill up and entity for now randomly with trees
  */
-std::vector<Entity> create_entities_from_vertices(const std::vector<Vertex>& ve);
+std::vector<Entity*> create_entities_from_vertices(const std::vector<Vertex>& ve, std::vector<Model*>* models);
 
 /**
  * Load texture from a path and return its opengl id

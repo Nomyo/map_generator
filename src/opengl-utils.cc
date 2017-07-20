@@ -114,18 +114,13 @@ std::vector<Vertex> create_vertices_from_noise(int startZ, int startX, int lengt
     return vertices;
 }
 
-std::vector<Entity> create_entities_from_vertices(const std::vector<Vertex>& ve)
+std::vector<Entity*> create_entities_from_vertices(const std::vector<Vertex>& ve, std::vector<Model*>* models)
 {
     // FIXME REALLY NOT AN OPTIMIZED SOLUTION
     // the right way should be, one model and multiple position
     // to display it. Do it later.
 
-    auto entities = std::vector<Entity>{};
-    Model tree_model("textures/pine.obj", "textures/pine.png", "", false);
-    Model grass_model("textures/grassModel.obj", "textures/grassTexture.png", "", false);
-    Model flower_model("textures/grassModel.obj", "textures/flower.png", "", false);
-    grass_model.set_fake_lighting(true);
-    flower_model.set_fake_lighting(true);
+    auto entities = std::vector<Entity*>{};
 
     std::random_device rd;
     std::mt19937 eng(rd());
@@ -143,15 +138,15 @@ std::vector<Entity> create_entities_from_vertices(const std::vector<Vertex>& ve)
     	    switch (r)
     	    {
       	    case 1: // FIXME SHOULD CARE ABOUT MAP ROTATION
-          		entities.push_back(Entity{tree_model, vertex.position
+          		entities.push_back(new Entity{ models->at(0), vertex.position
           			    ,glm::vec3(1.0f, 0.0f, 0.0f), 0.10f});
           		break;
           	case 2:
-          		entities.push_back(Entity{tree_model, vertex.position
+          		entities.push_back(new Entity{ models->at(0), vertex.position
           			    ,glm::vec3(1.0f, 0.0f, 0.0f), 0.15f});
           		break;
           	case 3:
-          		entities.push_back(Entity{tree_model, vertex.position
+          		entities.push_back(new Entity{ models->at(0), vertex.position
           			    ,glm::vec3(1.0f, 0.0f, 0.0f), 0.20f});
           	default:
           		break;
@@ -159,10 +154,10 @@ std::vector<Entity> create_entities_from_vertices(const std::vector<Vertex>& ve)
 
     	    auto grass_r = rand2();
     	    if (grass_r == 0 || grass_r == 1)
-    		    entities.push_back(Entity{grass_model, vertex.position,
+    		    entities.push_back(new Entity{ models->at(1), vertex.position,
     			    glm::vec3(1.0f, 0.0f, 0.0f), 1.0f});
     	    if (grass_r == 2)
-    		    entities.push_back(Entity{flower_model, vertex.position,
+    		    entities.push_back(new Entity{ models->at(2), vertex.position,
     			    glm::vec3(1.0f, 0.0f, 0.0f), 1.0f});
     	}
     }

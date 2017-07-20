@@ -1,3 +1,5 @@
+#pragma once
+
 #include <camera.hh>
 #include <mesh-terrain.hh>
 #include <light.hh>

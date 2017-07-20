@@ -6,7 +6,7 @@ MeshTerrain::MeshTerrain(std::vector<Vertex> vertices,
     : vertices_(vertices)
     , indices_(indices)
 {
-    setup_mesh();
+    //setup_mesh();
 }
 
 MeshTerrain::MeshTerrain(std::vector<Vertex> vertices,
@@ -16,7 +16,7 @@ MeshTerrain::MeshTerrain(std::vector<Vertex> vertices,
     , indices_(indices)
     , texture_pack_(texture_pack)
 {
-    setup_mesh();
+    //setup_mesh();
 }
 
 MeshTerrain::~MeshTerrain()
@@ -69,6 +69,16 @@ void MeshTerrain::set_chunk(std::pair<int, int> chunk)
 std::pair<int, int> MeshTerrain::get_chunk()
 {
 	return chunk_;
+}
+
+void MeshTerrain::set_entities(std::vector<Entity*> entities)
+{
+	entities_ = entities;
+}
+
+std::vector<Entity*> MeshTerrain::get_entities()
+{
+	return entities_;
 }
 
 void MeshTerrain::setup_mesh()
