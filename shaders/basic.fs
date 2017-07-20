@@ -25,19 +25,19 @@ void main()
 
     if (blendColour.r > 0.1)
     {
-    	rTextureColour = rTextureColour * vec4(ourColor, 1.0);
-    	if(blendColour.r > 0.49 && blendColour.r < 0.50)
-    	{
-    	    backgroundTextureColour = backgroundTextureColour * vec4(0.0f, (1.0f / 255.0f) * 102.0f, 0.0, 1.0);
-    	    gTextureColour = gTextureColour * vec4(0.0f, (1.0f / 255.0f) * 102.0f, 0.0, 1.0);
-    	}
+	rTextureColour = rTextureColour * vec4(ourColor, 1.0);
+	if(blendColour.r > 0.49 && blendColour.r < 0.50)
+	{
+	    backgroundTextureColour = backgroundTextureColour * vec4(0.0f, (1.0f / 255.0f) * 102.0f, 0.0, 1.0);
+	    gTextureColour = gTextureColour * vec4(0.0f, (1.0f / 255.0f) * 102.0f, 0.0, 1.0);
+	}
     }
     else
     {
-    	backgroundTextureColour = backgroundTextureColour * vec4(ourColor, 1.0);
-    	rTextureColour = rTextureColour * vec4(ourColor, 1.0);
-    	gTextureColour = gTextureColour * vec4(ourColor, 1.0);
-    	bTextureColour = bTextureColour * vec4(ourColor, 1.0);
+	backgroundTextureColour = backgroundTextureColour * vec4(ourColor, 1.0);
+	rTextureColour = rTextureColour * vec4(ourColor, 1.0);
+	gTextureColour = gTextureColour * vec4(ourColor, 1.0);
+	bTextureColour = bTextureColour * vec4(ourColor, 1.0);
     }
 
     vec4 totalColour = backgroundTextureColour + rTextureColour + gTextureColour + bTextureColour;

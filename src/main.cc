@@ -213,6 +213,7 @@ int start_opengl()
 
     // water tests
     Shader waterShader("shaders/water.vs", "shaders/water.fs");
+    Shader reflectiveShader("shaders/reflective.vs", "shaders/reflective.fs");
     unsigned int waterVAO, waterVBO;
     glGenVertexArrays(1, &waterVAO);
     glGenBuffers(1, &waterVBO);
@@ -307,6 +308,7 @@ int start_opengl()
     	glBindVertexArray(lightVAO);
     	glDrawArrays(GL_TRIANGLES, 0, 36);
 
+      /*
       waterShader.use();
       waterShader.setFloat("time", timer);
       waterShader.setMat4("projection", projection);
@@ -323,6 +325,25 @@ int start_opengl()
       for (auto mesh: map_mesh)
       {
         mesh->get_water()->draw(waterShader);
+      }
+      */
+
+      glm::mat4 model2;
+      model2 = glm::translate(model2, glm::vec3(0.0f, 0.0f, 0.0f));
+      model2 = glm::rotate(model2, glm::radians(0.0f),
+        glm::vec3(1.0f, 0.0f, 0.0f));
+
+      reflectiveShader.use();
+      reflectiveShader.setFloat("time", timer);
+      reflectiveShader.setMat4("projection", projection);
+      reflectiveShader.setMat4("view", view);
+      reflectiveShader.setMat4("model", model2);
+      glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
+      glEnable(GL_BLEND);
+      glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+      for (auto mesh: map_mesh)
+      {
+        mesh->get_water()->draw(reflectiveShader);
       }
 
       //glBindVertexArray(waterVAO);
