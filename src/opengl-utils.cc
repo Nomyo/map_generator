@@ -116,10 +116,6 @@ std::vector<Vertex> create_vertices_from_noise(int startZ, int startX, int lengt
 
 std::vector<Entity*> create_entities_from_vertices(const std::vector<Vertex>& ve, std::vector<Model*>* models)
 {
-    // FIXME REALLY NOT AN OPTIMIZED SOLUTION
-    // the right way should be, one model and multiple position
-    // to display it. Do it later.
-
     auto entities = std::vector<Entity*>{};
 
     std::random_device rd;
