@@ -145,24 +145,24 @@ int start_opengl()
     Shader our_lamp_shader("shaders/lamp.vs", "shaders/lamp.fs");
 
     // Mesh & Model
-    TerrainTexturePack t_pack(TerrainTexture{load_texturegl("textures/grass.png")},
-			      TerrainTexture{load_texturegl("textures/Snow.jpg")},
-			      TerrainTexture{load_texturegl("textures/grassy3.png")},
-			      TerrainTexture{load_texturegl("textures/rocky.jpg")});
+    TerrainTexturePack* t_pack = new TerrainTexturePack(new TerrainTexture{load_texturegl("textures/grass.png")},
+			      new TerrainTexture{load_texturegl("textures/Snow.jpg")},
+			      new TerrainTexture{load_texturegl("textures/grassy3.png")},
+			      new TerrainTexture{load_texturegl("textures/rocky.jpg")});
 
     std::vector<MeshTerrain*> map_mesh;
     std::vector<MeshTerrain*> meshes;
     std::vector<std::pair<int, int>> unload;
-    std::vector<Model*> models
+    std::vector<Model*>* models = new std::vector<Model*>
     {
       new Model("textures/pine.obj", "textures/pine.png", "", false),
       new Model("textures/grassModel.obj", "textures/grassTexture.png", "", false),
       new Model("textures/grassModel.obj", "textures/flower.png", "", false)
     };
-    models.at(1)->set_fake_lighting(true);
-    models.at(2)->set_fake_lighting(true);
+    models->at(1)->set_fake_lighting(true);
+    models->at(2)->set_fake_lighting(true);
 
-    std::thread t(manage_pool, &meshes, &unload, camera, &models);
+    std::thread t(manage_pool, &meshes, &unload, camera, models);
 
     //Light
     Light map_light(glm::vec3(150.0f, 200.0f, 150.0f),
@@ -261,10 +261,14 @@ int start_opengl()
 
     	// Render terrain
     	TerrainRenderer tr(our_map_shader, projection, view, view_pos, map_light);
-      EntityRenderer z(our_model_shader, projection, view, view_pos, map_light);
       for (auto mesh: map_mesh)
       {
         tr.render(*mesh, t_pack);
+      }
+
+      EntityRenderer z(our_model_shader, projection, view, view_pos, map_light);
+      for (auto mesh: map_mesh)
+      {
         z.render(mesh->get_entities());
       }
 

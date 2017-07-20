@@ -25,14 +25,14 @@ class MeshTerrain
 public:
     MeshTerrain(std::vector<Vertex> vertices, std::vector<unsigned int> indices);
     MeshTerrain(std::vector<Vertex> vertices, std::vector<unsigned int> indices,
-	TerrainTexturePack texture_pack);
+	TerrainTexturePack* texture_pack);
     ~MeshTerrain();
 
     void draw(Shader shader) const;
     std::vector<Vertex> get_vertices() const;
     std::vector<unsigned int> get_indices() const;
-    TerrainTexturePack get_texture_pack() const;
-    void set_texture_pack(TerrainTexturePack t);
+    TerrainTexturePack* get_texture_pack() const;
+    void set_texture_pack(TerrainTexturePack* t);
     void set_chunk(std::pair<int, int> chunk);
     std::pair<int, int> get_chunk();
     void set_entities(std::vector<Entity*> entities);
@@ -44,7 +44,7 @@ private:
     std::vector<unsigned int> indices_;
     std::vector<Entity*> entities_;
 
-    TerrainTexturePack texture_pack_;
+    TerrainTexturePack* texture_pack_;
     std::pair<int, int> chunk_;
     unsigned int VBO_;
     unsigned int EBO_;
