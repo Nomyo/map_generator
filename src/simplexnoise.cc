@@ -17,7 +17,20 @@ SimplexNoise::SimplexNoise()
     std::generate_n(permutation.begin(), 256, rand);
 
     for (int i = 256; i < 512; ++i)
-	permutation[i] = permutation[i - 256];
+	   permutation[i] = permutation[i - 256];
+}
+
+SimplexNoise::SimplexNoise(int i)
+{
+    std::mt19937 eng(i); // nice  the generator 2254022597
+    std::uniform_int_distribution<> distr(0, 255); // define the range
+
+    auto rand = std::bind(distr, eng);
+
+    std::generate_n(permutation.begin(), 256, rand);
+
+    for (int i = 256; i < 512; ++i)
+	   permutation[i] = permutation[i - 256];
 }
 
 double SimplexNoise::grad(int hash, double x, double y ) {

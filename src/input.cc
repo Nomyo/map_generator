@@ -28,24 +28,24 @@ void Input::process_input(GLFWwindow *window)
     auto camera = get_instance().get_camera();
 
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-	glfwSetWindowShouldClose(window, true);
+	   glfwSetWindowShouldClose(window, true);
 
     if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
-	camera->boosted(100.0f);
+	   camera->boosted(100.0f);
     else
-	camera->boosted(25.0);
+	   camera->boosted(25.0);
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-	camera->process_keyboard(Camera::Camera_movement::FORWARD, deltaTime);
+	   camera->process_keyboard(Camera::Camera_movement::FORWARD, deltaTime);
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-	camera->process_keyboard(Camera::Camera_movement::BACKWARD, deltaTime);
+	   camera->process_keyboard(Camera::Camera_movement::BACKWARD, deltaTime);
     if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-	camera->process_keyboard(Camera::Camera_movement::LEFT, deltaTime);
+	   camera->process_keyboard(Camera::Camera_movement::LEFT, deltaTime);
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-	camera->process_keyboard(Camera::Camera_movement::RIGHT, deltaTime);
+	   camera->process_keyboard(Camera::Camera_movement::RIGHT, deltaTime);
     if (glfwGetKey(window, GLFW_KEY_C) == GLFW_PRESS)
-	camera->process_keyboard(Camera::Camera_movement::DOWN, deltaTime);
+	   camera->process_keyboard(Camera::Camera_movement::DOWN, deltaTime);
     if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
-	camera->process_keyboard(Camera::Camera_movement::UP, deltaTime);
+	   camera->process_keyboard(Camera::Camera_movement::UP, deltaTime);
 }
 
 void Input::mouse_callback(GLFWwindow* window, double xpos, double ypos)
@@ -54,8 +54,8 @@ void Input::mouse_callback(GLFWwindow* window, double xpos, double ypos)
 
     if (first_mouse_)
     {
-	lastX_ = xpos;
-	lastY_ = ypos;
+	      lastX_ = xpos;
+	      lastY_ = ypos;
         first_mouse_ = false;
     }
 

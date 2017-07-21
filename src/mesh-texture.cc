@@ -20,23 +20,23 @@ void MeshTexture::draw(Shader shader)
     unsigned int heightNr   = 1;
     for(unsigned int i = 0; i < textures_.size(); i++)
     {
-	glActiveTexture(GL_TEXTURE0 + i); // active proper texture unit before binding
+			glActiveTexture(GL_TEXTURE0 + i); // active proper texture unit before binding
 
-	std::stringstream ss;
-	std::string number;
-	std::string name = textures_[i].type;
-	if(name == "texture_diffuse")
-	    ss << diffuseNr++; // transfer unsigned int to stream
-	else if(name == "texture_specular")
-	    ss << specularNr++; // transfer unsigned int to stream
-	else if(name == "texture_normal")
-	    ss << normalNr++; // transfer unsigned int to stream
-	else if(name == "texture_height")
-	    ss << heightNr++; // transfer unsigned int to stream
-	number = ss.str();
+			std::stringstream ss;
+			std::string number;
+			std::string name = textures_[i].type;
+			if(name == "texture_diffuse")
+			    ss << diffuseNr++; // transfer unsigned int to stream
+			else if(name == "texture_specular")
+			    ss << specularNr++; // transfer unsigned int to stream
+			else if(name == "texture_normal")
+			    ss << normalNr++; // transfer unsigned int to stream
+			else if(name == "texture_height")
+			    ss << heightNr++; // transfer unsigned int to stream
+			number = ss.str();
 
-	glUniform1i(glGetUniformLocation(shader.ID, (name + number).c_str()), i);
-	glBindTexture(GL_TEXTURE_2D, textures_[i].id);
+			glUniform1i(glGetUniformLocation(shader.ID, (name + number).c_str()), i);
+			glBindTexture(GL_TEXTURE_2D, textures_[i].id);
     }
 
     // draw mesh

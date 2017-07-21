@@ -8,50 +8,51 @@ const int dy[] = {0, 0, 1, -1};
 
 namespace
 {
-    void set_indices(std::vector<unsigned int>& indices)
+    void set_indices(std::vector<unsigned int>& indices, int lengthZ, int lengthX)
     {
-	for (int z = 0; z < M_HEIGHT - 1; ++z)
+	for (int z = 0; z < lengthZ - 1; ++z)
 	{
-	    for (int x = 0; x < M_WIDTH - 1; ++x)
+	    for (int x = 0; x < lengthX - 1; ++x)
 	    {
-		int start = x + z * M_WIDTH;
+		int start = x + z * lengthX;
 		indices.push_back(start);
 		indices.push_back(start + 1);
-		indices.push_back(start + M_WIDTH);
+		indices.push_back(start + lengthX);
 		indices.push_back(start + 1);
-		indices.push_back(start + 1 + M_WIDTH);
-		indices.push_back(start + M_WIDTH);
+		indices.push_back(start + 1 + lengthX);
+		indices.push_back(start + lengthX);
 	    }
 	}
     }
 
-    void set_normals(std::vector<Vertex>& vertices)
+    void set_normals(std::vector<Vertex>& vertices, int lengthZ, int lengthX)
     {
-	for (int z = 0; z < M_HEIGHT - 1; ++z)
+	for (int z = 0; z < lengthZ - 1; ++z)
 	{
-	    for (int x = 0; x < M_WIDTH - 1; ++x)
+	    for (int x = 0; x < lengthX - 1; ++x)
 	    {
 		if (x && z)
 		{
-		    float height_l = vertices[z * M_WIDTH + x - 1].position.y;
-		    float height_r = vertices[z * M_WIDTH + x + 1].position.y;
-		    float height_d = vertices[(z - 1) * M_WIDTH + x].position.y;
-		    float height_u = vertices[(z + 1) * M_WIDTH + x].position.y;
+		    float height_l = vertices[z * lengthX + x - 1].position.y;
+		    float height_r = vertices[z * lengthX + x + 1].position.y;
+		    float height_d = vertices[(z - 1) * lengthX + x].position.y;
+		    float height_u = vertices[(z + 1) * lengthX + x].position.y;
 		    glm::vec3 normal{height_l - height_r, 2.0f, height_d - height_u};
 		    normal = glm::normalize(normal);
-		    vertices[z * M_WIDTH + x].normal = normal;
+		    vertices[z * lengthX + x].normal = normal;
 		}
 	    }
 	}
     }
 
-    void set_height_color(std::vector<std::vector<int>> height_map,
-			  std::vector<std::vector<int>> moist_map,
-			  std::vector<Vertex>& vertices)
+    void set_height_color(std::vector<std::vector<double>> height_map,
+			  std::vector<std::vector<double>> moist_map,
+			  std::vector<Vertex>& vertices, int startZ, int startX,
+			  int lengthZ, int lengthX)
     {
-        for (int z = 0; z < M_HEIGHT; ++z)
+        for (int z = 0; z < lengthZ; ++z)
 	{
-	    for (int x = 0; x < M_WIDTH; ++x)
+	    for (int x = 0; x < lengthX; ++x)
 	    {
 		float p_noise = height_map[z][x];
 		float m_noise = moist_map[z][x];
@@ -60,8 +61,8 @@ namespace
 
 		set_color_from_noise(p_noise, m_noise, color, blend_color);
 		vertices.emplace_back(
-		    Vertex{glm::vec3(x, (p_noise / 2.0f) * 0.5f , z),
-			    color, glm::vec2{x, z},
+		    Vertex{glm::vec3(x + startX, (p_noise / 2.0f) * 0.5f , z + startZ),
+			    color, glm::vec2{x + startX, z + startZ},
 			    blend_color});
 	    }
 	}
@@ -139,50 +140,74 @@ void create_river(std::vector<std::vector<double>>& height_map,
     }
 }
 
-MeshTerrain create_mesh_from_noise()
+MeshTerrain* create_mesh_from_noise(int startZ, int startX, int lengthZ, int lengthX)
+{
+    SimplexNoise noise_generator;
+    SimplexNoise noise_generator2;
+    std::vector<Vertex> vertices = create_vertices_from_noise(startZ, startX, lengthZ, lengthX);
+    std::vector<unsigned int> indices;
+
+    set_indices(indices, lengthZ, lengthX);
+
+    return new MeshTerrain(vertices, indices);
+}
+
+MeshTerrain* create_mesh_from_noise(int startZ, int startX, int lengthZ,
+				    int lengthX, std::vector<Vertex> vertices)
+{
+    std::vector<unsigned int> indices;
+
+    set_indices(indices, lengthZ, lengthX);
+
+    return new MeshTerrain(vertices, indices);
+}
+
+std::vector<Vertex> create_vertices_from_noise(int startZ, int startX, int lengthZ, int lengthX)
 {
     SimplexNoise noise_generator;
     SimplexNoise noise_generator2;
     std::vector<Vertex> vertices;
-    std::vector<unsigned int> indices;
+
     std::vector<std::vector<double>> height_map;
     std::vector<std::vector<double>> moist_map;
 
-    for (int z = 0; z < M_HEIGHT; ++z)
+    for (int z = 0; z < lengthZ; ++z)
     {
-	double scale = 0.003;
-	double scale2 = 0.005;
-	height_map.push_back(std::vector<double>());
-	moist_map.push_back(std::vector<double>());
+    	double scale = 0.003;
+    	double scale2 = 0.005;
+    	height_map.push_back(std::vector<double>());
+    	moist_map.push_back(std::vector<double>());
 
-	for (int x = 0; x < M_WIDTH; ++x)
-        {
-	    height_map[z].push_back(noise_generator.sum_octave(16, x, z, 0.6, scale, 0, 255));
-	    moist_map[z].push_back(noise_generator2.sum_octave(16, x, z, 0.6, scale2, 0, 255));
-        }
+    	for (int x = 0; x < lengthX; ++x)
+    	{
+    	    height_map[z].push_back(noise_generator.sum_octave(16, x + startX,
+							       z + startZ, 0.6, scale, 0, 255));
+    	    moist_map[z].push_back(noise_generator2.sum_octave(16, x + startX,
+							       z + startZ, 0.6, scale2, 0, 255));
+    	}
     }
 
-    /**
-     ** River Generation
-     **/
+    // /**
+    //  ** River Generation
+    //  **/
     std::vector<std::tuple<int, int>> borders;
 
-    for (int y = 1; y < M_HEIGHT - 1; ++y)
+    for (int z = 1; z < lengthZ - 1; ++z)
     {
-	for (int x = 1; x < M_WIDTH - 1; ++x)
+    	for (int x = 1; x < lengthX - 1; ++x)
         {
-	    double h = height_map[y][x];
+    	    double h = height_map[z][x];
 
-	    if (h < 50 || h >= 75)
-		continue;
+    	    if (h < 50 || h >= 75)
+    		continue;
 
-	    std::vector<int> dir;
-	    check_sea_border(height_map, dir, y, x);
+    	    std::vector<int> dir;
+    	    check_sea_border(height_map, dir, z, x);
 
-	    if (dir.size() == 0)
-		continue;
+    	    if (dir.size() == 0)
+    		continue;
 
-	    borders.push_back(std::make_tuple(x, y));
+    	    borders.push_back(std::make_tuple(x, z));
         }
     }
 
@@ -194,77 +219,161 @@ MeshTerrain create_mesh_from_noise()
     auto rand2 = std::bind(distr2, eng);
     for (auto b : borders)
     {
-	if (rand() == 0)
+    	if (rand() == 0)
         {
-	    int len = rand2();
-	    create_river(height_map, moist_map, std::get<1>(b), std::get<0>(b), len);
+    	    int len = rand2();
+    	    create_river(height_map, moist_map, std::get<1>(b), std::get<0>(b), len);
         }
     }
 
     // set Height color
-    set_height_color(height_map, moist_map, vertices);
-
-    // set Indices
-    set_indices(indices);
+    set_height_color(height_map, moist_map, vertices, startZ, startX, lengthZ, lengthX);
 
     // set Normals
-    set_normals(vertices);
+    set_normals(vertices, lengthZ, lengthX);
 
-    MeshTerrain m(vertices, indices);
-    return m;
+    return vertices;
 }
 
-std::vector<Entity> create_entities_from_vertices(const std::vector<Vertex>& ve)
+std::vector<Vertex> create_vertices_from_noise(int startZ, int startX,
+					       int lengthZ, int lengthX, int seed)
 {
-    // FIXME REALLY NOT AN OPTIMIZED SOLUTION
-    // the right way should be, one model and multiple position
-    // to display it. Do it later.
+    SimplexNoise noise_generator(seed);
+    SimplexNoise noise_generator2(seed + 1);
+    std::vector<Vertex> vertices;
 
-    auto entities = std::vector<Entity>{};
-    Model tree_model("textures/pine.obj", "textures/pine.png", "", false);
-    Model grass_model("textures/grassModel.obj", "textures/grassTexture.png", "", false);
-    grass_model.set_fake_lighting(true);
-    Model flower_model("textures/grassModel.obj", "textures/flower.png", "", false);
-    flower_model.set_fake_lighting(true);
+    std::vector<std::vector<double>> height_map;
+    std::vector<std::vector<double>> moist_map;
+
+    for (int z = 0; z < lengthZ; ++z)
+    {
+    	double scale = 0.003;
+    	double scale2 = 0.005;
+    	height_map.push_back(std::vector<double>());
+    	moist_map.push_back(std::vector<double>());
+
+    	for (int x = 0; x < lengthX; ++x)
+    	{
+    	    height_map[z].push_back(noise_generator.sum_octave(16, x + startX,
+							       z + startZ, 0.6, scale, 0, 255));
+    	    moist_map[z].push_back(noise_generator2.sum_octave(16, x + startX,
+							       z + startZ, 0.6, scale2, 0, 255));
+    	}
+    }
+
+    // /**
+    //  ** River Generation
+    //  **/
+    std::vector<std::tuple<int, int>> borders;
+
+    for (int z = 1; z < lengthZ - 1; ++z)
+    {
+    	for (int x = 1; x < lengthX - 1; ++x)
+        {
+    	    double h = height_map[z][x];
+
+    	    if (h < 50 || h >= 75)
+    		continue;
+
+    	    std::vector<int> dir;
+    	    check_sea_border(height_map, dir, z, x);
+
+    	    if (dir.size() == 0)
+    		continue;
+
+    	    borders.push_back(std::make_tuple(x, z));
+        }
+    }
 
     std::random_device rd;
     std::mt19937 eng(rd());
-    std::uniform_int_distribution<> distr(0, 500);
-    std::uniform_int_distribution<> distr2(0, 3000);
+    std::uniform_int_distribution<> distr(0, 99);
+    std::uniform_int_distribution<> distr2(100, 300);
+    auto rand = std::bind(distr, eng);
+    auto rand2 = std::bind(distr2, eng);
+    for (auto b : borders)
+    {
+    	if (rand() == 0)
+        {
+    	    int len = rand2();
+    	    create_river(height_map, moist_map, std::get<1>(b), std::get<0>(b), len);
+        }
+    }
+
+    // set Height color
+    set_height_color(height_map, moist_map, vertices, startZ, startX, lengthZ, lengthX);
+
+    // set Normals
+    set_normals(vertices, lengthZ, lengthX);
+
+    return vertices;
+}
+
+std::vector<Vertex> create_vertices_from_flat(int startZ, int startX, int lengthZ,
+					      int lengthX, int y)
+{
+    std::vector<Vertex> vertices;
+
+    for (int z = startZ; z < startZ + lengthZ; z += 1)
+    {
+    	for (int x = startX; x < startX + lengthX; x += 1)
+    	{
+    	    glm::vec3 color{1.f};
+    	    glm::vec3 blend_color{1.f};
+
+    	    vertices.emplace_back(
+    		  Vertex{glm::vec3(x, y , z),
+    			color, glm::vec2{x, z},
+          blend_color});
+    	}
+    }
+
+    return vertices;
+}
+
+std::vector<Entity*> create_entities_from_vertices(const std::vector<Vertex>& ve,
+						   std::vector<Model*>* models)
+{
+    auto entities = std::vector<Entity*>{};
+
+    std::random_device rd;
+    std::mt19937 eng(rd());
+    std::uniform_int_distribution<> distr(0, 100);
+    std::uniform_int_distribution<> distr2(0, 700);
 
     auto rand = std::bind(distr, eng);
     auto rand2 = std::bind(distr2, eng);
 
     for (auto vertex : ve)
     {
-	if (vertex.position.y >= 22.0f && vertex.color.b < (1.0f / 255.0f) * 254.0f)
-        {
-	    auto r = rand();
-	    switch (r)
-            {
-            case 1:
-		entities.push_back(Entity{tree_model, vertex.position
-			    ,glm::vec3(1.0f, 0.0f, 0.0f), 0.30f});
-		break;
-            case 2:
-		entities.push_back(Entity{tree_model, vertex.position
-			    ,glm::vec3(1.0f, 0.0f, 0.0f), 0.45f});
-		break;
-            case 3:
-		entities.push_back(Entity{tree_model, vertex.position
-			    ,glm::vec3(1.0f, 0.0f, 0.0f), 0.60f});
-            default:
-		break;
-            }
+    	if (vertex.position.y >= 22.0f && vertex.color.b < (1.0f / 255.0f) * 254.0f)
+    	{
+    	    auto r = rand();
+    	    switch (r)
+    	    {
+      	    case 1: // FIXME SHOULD CARE ABOUT MAP ROTATION
+          		entities.push_back(new Entity{ models->at(0), vertex.position
+          			    ,glm::vec3(1.0f, 0.0f, 0.0f), 0.10f});
+          		break;
+          	case 2:
+          		entities.push_back(new Entity{ models->at(0), vertex.position
+          			    ,glm::vec3(1.0f, 0.0f, 0.0f), 0.15f});
+          		break;
+          	case 3:
+          		entities.push_back(new Entity{ models->at(0), vertex.position
+          			    ,glm::vec3(1.0f, 0.0f, 0.0f), 0.20f});
+          	default:
+          		break;
+    	    }
 
-	    auto grass_r = rand2();
-	    if (grass_r == 0 || grass_r == 1)
-		entities.push_back(Entity{grass_model, vertex.position,
-			    glm::vec3(1.0f, 0.0f, 0.0f), 1.0f});
-	    if (grass_r == 2)
-		entities.push_back(Entity{flower_model, vertex.position,
-			    glm::vec3(1.0f, 0.0f, 0.0f), 1.0f});
-        }
+    	    auto grass_r = rand2();
+    	    if (grass_r == 0 || grass_r == 1)
+    		    entities.push_back(new Entity{ models->at(1), vertex.position,
+    			    glm::vec3(1.0f, 0.0f, 0.0f), 1.0f});
+    	    if (grass_r == 2)
+    		    entities.push_back(new Entity{ models->at(2), vertex.position,
+    			    glm::vec3(1.0f, 0.0f, 0.0f), 1.0f});
+    	}
     }
     return entities;
 }
@@ -289,13 +398,13 @@ unsigned int load_texturegl(const std::string& path)
 				    &nrChannels, 0);
     if (data)
     {
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB,
-		     GL_UNSIGNED_BYTE, data);
-	glGenerateMipmap(GL_TEXTURE_2D);
+    	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB,
+    		     GL_UNSIGNED_BYTE, data);
+    	glGenerateMipmap(GL_TEXTURE_2D);
     }
     else
     {
-	std::cout << "Failed to load texture" << std::endl;
+	     std::cout << "Failed to load texture" << std::endl;
     }
 
     stbi_image_free(data);
@@ -314,92 +423,92 @@ void set_color_from_noise(float height, float moisture,
     }
     else if (height < 50) // dark water
     {
-	color = glm::vec3{0.0f, 0.0f, (1.0f / 255.0f) * 204.0f};
-	blend_color = glm::vec3{1.0f, 0.0f, 0.0f};
+	     color = glm::vec3{0.0f, 0.0f, (1.0f / 255.0f) * 204.0f};
+	      blend_color = glm::vec3{1.0f, 0.0f, 0.0f};
     }
     else if (height < 75) // light water
     {
-	color = glm::vec3{0.0f, (1.0f / 255.0f) * 128.0f, (1.0f / 255.0f) * 255.0f};
-	blend_color = glm::vec3{1.0f, 0.0f, 0.0f};
+	     color = glm::vec3{0.0f, (1.0f / 255.0f) * 128.0f, (1.0f / 255.0f) * 255.0f};
+	      blend_color = glm::vec3{1.0f, 0.0f, 0.0f};
     }
 
     else if (height < 80) // beach
     {
-	color = glm::vec3{(1.0f / 255.0f) * 228.0f, (1.0f / 255.0f) * 198.0f,
+	     color = glm::vec3{(1.0f / 255.0f) * 228.0f, (1.0f / 255.0f) * 198.0f,
 			  (1.0f / 255.0f) * 169.0f};
-	blend_color = glm::vec3{1.0f, 0.0f, 0.0f};
+	     blend_color = glm::vec3{1.0f, 0.0f, 0.0f};
     }
     else if (height < 85) // beach transition
     {
-	color = glm::vec3{(1.0f / 255.0f) * 228.0f, (1.0f / 255.0f) * 198.0f,
-			  (1.0f / 255.0f) * 169.0f};
-	if (moisture < 100)
-	    blend_color = glm::vec3{0.50f, 0.0f, 0.50f};
-	else if (moisture < 159.5)
-	    blend_color = glm::vec3{0.49f, 0.0f, 0.0f}; // grass x white
-	else
-	    blend_color = glm::vec3{0.51f, 0.0f, 0.0f}; // grass x green dark
+    	color = glm::vec3{(1.0f / 255.0f) * 228.0f, (1.0f / 255.0f) * 198.0f,
+    			  (1.0f / 255.0f) * 169.0f};
+    	if (moisture < 100)
+    	    blend_color = glm::vec3{0.50f, 0.0f, 0.50f};
+    	else if (moisture < 159.5)
+    	    blend_color = glm::vec3{0.49f, 0.0f, 0.0f}; // grass x white
+    	else
+    	    blend_color = glm::vec3{0.51f, 0.0f, 0.0f}; // grass x green dark
     }
 
     else if (height < 150) // desert / grass / dark grass
     {
-	color = glm::vec3{1.0f, 1.0f, 1.0f};
+    	color = glm::vec3{1.0f, 1.0f, 1.0f};
 
-	if (moisture < 100)
-	    blend_color = glm::vec3{0.0f, 0.0f, 1.0f};
-	else if (moisture < 159.5)
-	    blend_color = glm::vec3{0.0f, 0.0f, 0.0f}; // grass x b
-	else
-        {
-	    blend_color = glm::vec3{0.0f, 0.0f, 0.0f}; // grass x green dark
-	    color = glm::vec3{0.0f, (1.0f / 255.0f) * 102.0f ,0.0f}; // green dark
-        }
+    	if (moisture < 100)
+    	    blend_color = glm::vec3{0.0f, 0.0f, 1.0f};
+    	else if (moisture < 159.5)
+    	    blend_color = glm::vec3{0.0f, 0.0f, 0.0f}; // grass x b
+    	else
+    	{
+    	    blend_color = glm::vec3{0.0f, 0.0f, 0.0f}; // grass x green dark
+    	    color = glm::vec3{0.0f, (1.0f / 255.0f) * 102.0f ,0.0f}; // green dark
+    	}
     }
 
     else if (height < 160) // desert / grass / dark grass transition
     {
-	color = glm::vec3{1.0f, 1.0f, 1.0f};
+    	color = glm::vec3{1.0f, 1.0f, 1.0f};
 
-	if (moisture < 100)
-	    blend_color = glm::vec3{0.0f, 0.0f, 1.0f};
-	else if (moisture < 159.5)
-	    blend_color = glm::vec3{0.0f, 0.5f, 0.0f}; // grassy x b
-	else
-        {
-	    blend_color = glm::vec3{0.0f, 0.5f, 0.0f}; // grassy x green dark
-	    color = glm::vec3{0.0f, (1.0f / 255.0f) * 102.0f ,0.0f}; // green dark
-        }
+    	if (moisture < 100)
+    	    blend_color = glm::vec3{0.0f, 0.0f, 1.0f};
+    	else if (moisture < 159.5)
+    	    blend_color = glm::vec3{0.0f, 0.5f, 0.0f}; // grassy x b
+    	else
+    	{
+    	    blend_color = glm::vec3{0.0f, 0.5f, 0.0f}; // grassy x green dark
+    	    color = glm::vec3{0.0f, (1.0f / 255.0f) * 102.0f ,0.0f}; // green dark
+    	}
     }
 
     else if (height < 200) // desert / grassy / dark grassy
     {
-	color = glm::vec3{1.0f, 1.0f, 1.0f};
+    	color = glm::vec3{1.0f, 1.0f, 1.0f};
 
-	if (moisture < 100)
-	    blend_color = glm::vec3{0.0f, 0.0f, 1.0f};
-	else if (moisture < 159.5)
-	    blend_color = glm::vec3{0.0f, 1.0f, 0.0f}; // grassy x b
-	else
-        {
-	    blend_color = glm::vec3{0.0f, 1.0f, 0.0f}; // grassy x green dark
-	    color = glm::vec3{0.0f, (1.0f / 255.0f) * 102.0f ,0.0f}; // green dark
-        }
+    	if (moisture < 100)
+    	    blend_color = glm::vec3{0.0f, 0.0f, 1.0f};
+    	else if (moisture < 159.5)
+    	    blend_color = glm::vec3{0.0f, 1.0f, 0.0f}; // grassy x b
+    	else
+    	{
+    	    blend_color = glm::vec3{0.0f, 1.0f, 0.0f}; // grassy x green dark
+    	    color = glm::vec3{0.0f, (1.0f / 255.0f) * 102.0f ,0.0f}; // green dark
+    	}
     }
 
     else if (height < 210)  // desert / grassy / dark grassy transition
     {
-	color = glm::vec3{1.0f, 1.0f, 1.0f};
+    	color = glm::vec3{1.0f, 1.0f, 1.0f};
 
-	if (moisture < 100)
-	    blend_color = glm::vec3{0.0f, 0.0f, 1.0f};
-	else if (moisture < 159.5)
-	    blend_color = glm::vec3{0.49f, 0.51f, 0.0f}; // grassy x b
-	else
-	    blend_color = glm::vec3{0.51f, 0.49f, 0.0f}; // grassy x green dark
+    	if (moisture < 100)
+    	    blend_color = glm::vec3{0.0f, 0.0f, 1.0f};
+    	else if (moisture < 159.5)
+    	    blend_color = glm::vec3{0.49f, 0.51f, 0.0f}; // grassy x b
+    	else
+    	    blend_color = glm::vec3{0.51f, 0.49f, 0.0f}; // grassy x green dark
     }
     else
     {
-	color = glm::vec3{1.0f, 1.0f, 1.0f};
-	blend_color = glm::vec3{1.0f, 0.0f, 0.0f}; // grass x green dark
+    	color = glm::vec3{1.0f, 1.0f, 1.0f};
+    	blend_color = glm::vec3{1.0f, 0.0f, 0.0f}; // grass x green dark
     }
 }

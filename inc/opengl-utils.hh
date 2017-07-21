@@ -9,6 +9,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <entity-renderer.hh>
 
 #include "tools.hh"
 
@@ -33,12 +34,16 @@ void create_river(std::vector<std::vector<double>>& height_map,
 /**
  * Perform perlin noise and build a mesh with it
  */
-MeshTerrain create_mesh_from_noise();
+MeshTerrain* create_mesh_from_noise(int startZ, int startX, int lengthZ, int lengthX);
+MeshTerrain* create_mesh_from_noise(int startZ, int startX, int lengthZ, int lengthX, std::vector<Vertex> vertices);
+std::vector<Vertex> create_vertices_from_noise(int startZ, int startX, int lengthZ, int lengthX);
+std::vector<Vertex> create_vertices_from_noise(int startZ, int startX, int lengthZ, int lengthX, int seed);
+std::vector<Vertex> create_vertices_from_flat(int startZ, int startX, int lengthZ, int lengthX, int y);
 
 /**
  * Fill up and entity for now randomly with trees
  */
-std::vector<Entity> create_entities_from_vertices(const std::vector<Vertex>& ve);
+std::vector<Entity*> create_entities_from_vertices(const std::vector<Vertex>& ve, std::vector<Model*>* models);
 
 /**
  * Load texture from a path and return its opengl id

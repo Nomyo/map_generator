@@ -1,3 +1,5 @@
+#pragma once
+
 #include <iostream>
 #include <vector>
 #include <algorithm>
@@ -7,6 +9,7 @@ class SimplexNoise
 {
 public:
     SimplexNoise();
+    SimplexNoise(int i);
     ~SimplexNoise() = default;
 
     double make_noise(double x, double y);

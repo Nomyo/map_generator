@@ -6,17 +6,17 @@ MeshTerrain::MeshTerrain(std::vector<Vertex> vertices,
     : vertices_(vertices)
     , indices_(indices)
 {
-    setup_mesh();
+    //setup_mesh();
 }
 
 MeshTerrain::MeshTerrain(std::vector<Vertex> vertices,
 			 std::vector<unsigned int> indices,
-			 TerrainTexturePack texture_pack)
+			 TerrainTexturePack* texture_pack)
     : vertices_(vertices)
     , indices_(indices)
     , texture_pack_(texture_pack)
 {
-    setup_mesh();
+    //setup_mesh();
 }
 
 MeshTerrain::~MeshTerrain()
@@ -28,13 +28,13 @@ MeshTerrain::~MeshTerrain()
 void MeshTerrain::draw(Shader /*shader*/) const
 {
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, texture_pack_.get_backgroundTexture().get_texture_id());
+    glBindTexture(GL_TEXTURE_2D, texture_pack_->get_backgroundTexture()->get_texture_id());
     glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, texture_pack_.get_rTexture().get_texture_id());
+    glBindTexture(GL_TEXTURE_2D, texture_pack_->get_rTexture()->get_texture_id());
     glActiveTexture(GL_TEXTURE2);
-    glBindTexture(GL_TEXTURE_2D, texture_pack_.get_gTexture().get_texture_id());
+    glBindTexture(GL_TEXTURE_2D, texture_pack_->get_gTexture()->get_texture_id());
     glActiveTexture(GL_TEXTURE3);
-    glBindTexture(GL_TEXTURE_2D, texture_pack_.get_bTexture().get_texture_id());
+    glBindTexture(GL_TEXTURE_2D, texture_pack_->get_bTexture()->get_texture_id());
 
     glBindVertexArray(VAO_);
     glDrawElements(GL_TRIANGLES, indices_.size(), GL_UNSIGNED_INT, 0);
@@ -46,14 +46,49 @@ std::vector<Vertex> MeshTerrain::get_vertices() const
     return vertices_;
 }
 
-TerrainTexturePack MeshTerrain::get_texture_pack() const
+std::vector<unsigned int> MeshTerrain::get_indices() const
+{
+    return indices_;
+}
+
+TerrainTexturePack* MeshTerrain::get_texture_pack() const
 {
     return texture_pack_;
 }
 
-void MeshTerrain::set_texture_pack(TerrainTexturePack t)
+void MeshTerrain::set_texture_pack(TerrainTexturePack* t)
 {
     texture_pack_ = t;
+}
+
+void MeshTerrain::set_chunk(std::pair<int, int> chunk)
+{
+	chunk_ = chunk;
+}
+
+std::pair<int, int> MeshTerrain::get_chunk()
+{
+	return chunk_;
+}
+
+void MeshTerrain::set_entities(std::vector<Entity*> entities)
+{
+	entities_ = entities;
+}
+
+std::vector<Entity*> MeshTerrain::get_entities()
+{
+	return entities_;
+}
+
+void MeshTerrain::set_water(MeshTerrain* waterMesh)
+{
+	waterMesh_ = waterMesh;
+}
+
+MeshTerrain* MeshTerrain::get_water()
+{
+	return waterMesh_;
 }
 
 void MeshTerrain::setup_mesh()

@@ -1,1 +1,1 @@
-# map_generator
+# PPP-generator
