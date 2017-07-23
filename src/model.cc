@@ -201,8 +201,6 @@ std::vector<Texture> Model::loadMaterialTextures(aiMaterial *mat,
 
 unsigned int TextureFromFile(const std::string& filename, bool gamma)
 {
-    std::cout << filename << std::endl;
-
     unsigned int textureID;
     glGenTextures(1, &textureID);
 

@@ -1,4 +1,6 @@
 #include <opengl-utils.hh>
+#include <tbb/tbb.h>
+#include <profiler.hh>
 
 /**
  ** Vectors
@@ -27,19 +29,45 @@ namespace
 
     void set_normals(std::vector<Vertex>& vertices, int lengthZ, int lengthX)
     {
-	for (int z = 0; z < lengthZ - 1; ++z)
+	if (Profiler::multi_thread)
 	{
-	    for (int x = 0; x < lengthX - 1; ++x)
+	    tbb::parallel_for(tbb::blocked_range<int>(1, lengthZ - 1),
+            [&](const tbb::blocked_range<int>& rz)
+            {
+            for (auto z = rz.begin(); z != rz.end(); ++z)
 	    {
-		if (x && z)
+	      tbb::parallel_for(tbb::blocked_range<int>(1, lengthX - 1),
+	      [&](const tbb::blocked_range<int>& rx) {
+	      for(int x = rx.begin(); x != rx.end(); ++x)
+	      {
+		  float height_l = vertices[z * lengthX + x - 1].position.y;
+		  float height_r = vertices[z * lengthX + x + 1].position.y;
+		  float height_d = vertices[(z - 1) * lengthX + x].position.y;
+		  float height_u = vertices[(z + 1) * lengthX + x].position.y;
+		  glm::vec3 normal{height_l - height_r, 2.0f, height_d - height_u};
+		  normal = glm::normalize(normal);
+		  vertices[z * lengthX + x].normal = normal;
+	      }
+	      });
+	     }
+	    });
+	}
+	else
+	{
+	    for (int z = 0; z < lengthZ - 1; ++z)
+	    {
+		for (int x = 0; x < lengthX - 1; ++x)
 		{
-		    float height_l = vertices[z * lengthX + x - 1].position.y;
-		    float height_r = vertices[z * lengthX + x + 1].position.y;
-		    float height_d = vertices[(z - 1) * lengthX + x].position.y;
-		    float height_u = vertices[(z + 1) * lengthX + x].position.y;
-		    glm::vec3 normal{height_l - height_r, 2.0f, height_d - height_u};
-		    normal = glm::normalize(normal);
-		    vertices[z * lengthX + x].normal = normal;
+		    if (x && z)
+		    {
+			float height_l = vertices[z * lengthX + x - 1].position.y;
+			float height_r = vertices[z * lengthX + x + 1].position.y;
+			float height_d = vertices[(z - 1) * lengthX + x].position.y;
+			float height_u = vertices[(z + 1) * lengthX + x].position.y;
+			glm::vec3 normal{height_l - height_r, 2.0f, height_d - height_u};
+			normal = glm::normalize(normal);
+			vertices[z * lengthX + x].normal = normal;
+		    }
 		}
 	    }
 	}
@@ -140,18 +168,6 @@ void create_river(std::vector<std::vector<double>>& height_map,
     }
 }
 
-MeshTerrain* create_mesh_from_noise(int startZ, int startX, int lengthZ, int lengthX)
-{
-    SimplexNoise noise_generator;
-    SimplexNoise noise_generator2;
-    std::vector<Vertex> vertices = create_vertices_from_noise(startZ, startX, lengthZ, lengthX);
-    std::vector<unsigned int> indices;
-
-    set_indices(indices, lengthZ, lengthX);
-
-    return new MeshTerrain(vertices, indices);
-}
-
 MeshTerrain* create_mesh_from_noise(int startZ, int startX, int lengthZ,
 				    int lengthX, std::vector<Vertex> vertices)
 {
@@ -160,79 +176,6 @@ MeshTerrain* create_mesh_from_noise(int startZ, int startX, int lengthZ,
     set_indices(indices, lengthZ, lengthX);
 
     return new MeshTerrain(vertices, indices);
-}
-
-std::vector<Vertex> create_vertices_from_noise(int startZ, int startX, int lengthZ, int lengthX)
-{
-    SimplexNoise noise_generator;
-    SimplexNoise noise_generator2;
-    std::vector<Vertex> vertices;
-
-    std::vector<std::vector<double>> height_map;
-    std::vector<std::vector<double>> moist_map;
-
-    for (int z = 0; z < lengthZ; ++z)
-    {
-    	double scale = 0.003;
-    	double scale2 = 0.005;
-    	height_map.push_back(std::vector<double>());
-    	moist_map.push_back(std::vector<double>());
-
-    	for (int x = 0; x < lengthX; ++x)
-    	{
-    	    height_map[z].push_back(noise_generator.sum_octave(16, x + startX,
-							       z + startZ, 0.6, scale, 0, 255));
-    	    moist_map[z].push_back(noise_generator2.sum_octave(16, x + startX,
-							       z + startZ, 0.6, scale2, 0, 255));
-    	}
-    }
-
-    // /**
-    //  ** River Generation
-    //  **/
-    std::vector<std::tuple<int, int>> borders;
-
-    for (int z = 1; z < lengthZ - 1; ++z)
-    {
-    	for (int x = 1; x < lengthX - 1; ++x)
-        {
-    	    double h = height_map[z][x];
-
-    	    if (h < 50 || h >= 75)
-    		continue;
-
-    	    std::vector<int> dir;
-    	    check_sea_border(height_map, dir, z, x);
-
-    	    if (dir.size() == 0)
-    		continue;
-
-    	    borders.push_back(std::make_tuple(x, z));
-        }
-    }
-
-    std::random_device rd;
-    std::mt19937 eng(rd());
-    std::uniform_int_distribution<> distr(0, 99);
-    std::uniform_int_distribution<> distr2(100, 300);
-    auto rand = std::bind(distr, eng);
-    auto rand2 = std::bind(distr2, eng);
-    for (auto b : borders)
-    {
-    	if (rand() == 0)
-        {
-    	    int len = rand2();
-    	    create_river(height_map, moist_map, std::get<1>(b), std::get<0>(b), len);
-        }
-    }
-
-    // set Height color
-    set_height_color(height_map, moist_map, vertices, startZ, startX, lengthZ, lengthX);
-
-    // set Normals
-    set_normals(vertices, lengthZ, lengthX);
-
-    return vertices;
 }
 
 std::vector<Vertex> create_vertices_from_noise(int startZ, int startX,
@@ -245,20 +188,61 @@ std::vector<Vertex> create_vertices_from_noise(int startZ, int startX,
     std::vector<std::vector<double>> height_map;
     std::vector<std::vector<double>> moist_map;
 
-    for (int z = 0; z < lengthZ; ++z)
-    {
-    	double scale = 0.003;
-    	double scale2 = 0.005;
-    	height_map.push_back(std::vector<double>());
-    	moist_map.push_back(std::vector<double>());
 
-    	for (int x = 0; x < lengthX; ++x)
-    	{
-    	    height_map[z].push_back(noise_generator.sum_octave(16, x + startX,
-							       z + startZ, 0.6, scale, 0, 255));
-    	    moist_map[z].push_back(noise_generator2.sum_octave(16, x + startX,
-							       z + startZ, 0.6, scale2, 0, 255));
-    	}
+    height_map.resize(lengthZ);
+    moist_map.resize(lengthZ);
+
+    if (Profiler::multi_thread)
+    {
+	tbb::parallel_for(tbb::blocked_range<int>(0, lengthZ),
+        [&](const tbb::blocked_range<int>& rz)
+	{
+	    double scale = 0.003;
+	    double scale2 = 0.005;
+	    for (auto z = rz.begin(); z != rz.end(); ++z)
+	    {
+
+		height_map[z].resize(lengthX);
+		moist_map[z].resize(lengthX);
+
+		tbb::parallel_for(tbb::blocked_range<int>(0, lengthX),
+				  [&](const tbb::blocked_range<int>& rx) {
+				      for(int x = rx.begin(); x != rx.end(); ++x)
+				      {
+					  auto& hm = height_map[z];
+					  hm[x] = noise_generator.sum_octave(16, x + startX,
+									     z + startZ, 0.6, scale, 0, 255);
+					  auto& mm = moist_map[z];
+					  mm[x] = noise_generator2.sum_octave(16, x + startX,
+									      z + startZ, 0.6, scale2, 0, 255);
+				      }
+				  });
+
+	    }
+	});
+    }
+    else
+    {
+	for (int z = 0; z < lengthZ; ++z)
+	{
+	    double scale = 0.003;
+	    double scale2 = 0.005;
+
+	    height_map[z].resize(lengthX);
+	    moist_map[z].resize(lengthX);
+
+
+	    for (int x = 0; x < lengthX; ++x)
+	    {
+		auto& hm = height_map[z];
+		hm[x] = noise_generator.sum_octave(16, x + startX,
+						   z + startZ, 0.6, scale, 0, 255);
+		auto& mm = moist_map[z];
+		mm[x] = noise_generator2.sum_octave(16, x + startX,
+						    z + startZ, 0.6, scale2, 0, 255);
+	    }
+
+	}
     }
 
     // /**

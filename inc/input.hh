@@ -37,4 +37,5 @@ public:
     static float deltaTime;
     static float lastFrame;
     static bool first_mouse_;
+    static bool terminate_;
 };

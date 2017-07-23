@@ -85,8 +85,8 @@ glm::vec3 cubePositions[] = {
 };
 
 std::mutex g_mutex;
-int chunkZ = 300;
-int chunkX = 300;
+int chunkZ = 500;
+int chunkX = 500;
 float skyboxVertices[] = {
     // positions
     -1.0f,  1.0f, -1.0f,

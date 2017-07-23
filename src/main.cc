@@ -1,86 +1,122 @@
 #include <main.hh>
+#include <profiler.hh>
+#include <boost/program_options.hpp>
 
 void generate_chunk(std::vector<MeshTerrain*>* meshes, int seed, int startZ,
 		    int startX, int lengthZ, int lengthX,
 		    std::pair<int,int> chunk, std::vector<Model*>* models)
 {
-  //std::cout << startZ << "/" << startX << "/" << lengthZ << "/" << lengthX << std::endl;
-  auto r = create_vertices_from_noise(startZ, startX, lengthZ, lengthX, seed);
-  auto m = create_mesh_from_noise(0, 0, chunkZ, chunkX, r);
-  m->set_chunk(chunk);
+    std::chrono::high_resolution_clock::time_point t1 =
+	std::chrono::high_resolution_clock::now();
 
-  auto tmp1 = create_vertices_from_flat(startZ, startX, lengthZ, lengthX, 19);
-  auto waterMesh = create_mesh_from_noise(0, 0, chunkZ, chunkX, tmp1);
+    auto r = create_vertices_from_noise(startZ, startX, lengthZ, lengthX, seed);
+    auto m = create_mesh_from_noise(0, 0, chunkZ, chunkX, r);
+    m->set_chunk(chunk);
 
-  g_mutex.lock();
-  m->set_water(waterMesh);
-  m->set_entities(create_entities_from_vertices(m->get_vertices(), models));
+    auto tmp1 = create_vertices_from_flat(startZ, startX, lengthZ, lengthX, 19);
+    auto waterMesh = create_mesh_from_noise(0, 0, chunkZ, chunkX, tmp1);
 
-  meshes->push_back(m);
-  g_mutex.unlock();
+    std::chrono::high_resolution_clock::time_point t2 =
+	std::chrono::high_resolution_clock::now();
+
+    g_mutex.lock();
+    m->set_water(waterMesh);
+    m->set_entities(create_entities_from_vertices(m->get_vertices(), models));
+
+    meshes->push_back(m);
+    g_mutex.unlock();
+
+    auto duration =
+	std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1)
+	.count();
+
+    Profiler::add_duration(duration);
+
+    ColorModifier clgreen(ColorCode::FG_LIGHT_GREEN);
+    ColorModifier clblue(ColorCode::FG_LIGHT_BLUE);
+    ColorModifier cdef(ColorCode::FG_DEFAULT);
+
+    std::cout << clblue << "Duration of the chunk generation : "  << cdef
+	      << clgreen << duration << " ms" << cdef << std::endl;
+
 }
 
 void manage_pool(std::vector<MeshTerrain*>* meshes,
 		 std::vector<std::pair<int, int>>* unload,
 		 Camera* cam, std::vector<Model*>* models)
 {
-  using namespace std::chrono_literals;
-  std::random_device rd; // obtain a random number from hardware
-  auto seed = rd();
-  int i = 0;
-  std::vector<std::thread> threadPool;
-  std::vector<std::pair<int, int>> alreadyLoad;
-  int size = 1;
+    using namespace std::chrono_literals;
+    std::random_device rd; // obtain a random number from hardware
+    auto seed = rd();
+    int i = 0;
+    std::vector<std::thread> threadPool;
+    std::vector<std::pair<int, int>> alreadyLoad;
+    int size = 1;
 
-  while(true)
-  {
-    g_mutex.lock();
-    glm::vec3 view_pos = cam->get_view_pos();
-    g_mutex.unlock();
-
-    auto camPos = std::make_pair(((int)view_pos.z) / chunkZ, ((int)view_pos.x) / chunkX);
-
-    // Search for chunks out of cam scope
-    for (auto it = alreadyLoad.begin(); it != alreadyLoad.end();)
+    while(true)
     {
-        if (abs(it->first - camPos.first) > size || abs(it->second - camPos.second) > size)
-        {
-          g_mutex.lock();
-          unload->push_back(*it);
-          g_mutex.unlock();
-          //std::cout << "Request remove of: " << it->first << "/" << it->second << std::endl;
-          it = alreadyLoad.erase(it);
-        } else {
-          it++;
-        }
-    }
+	if (Input::terminate_)
+	{
+	    for (auto& t: threadPool)
+		t.join();
 
-    for (int i = -size; i <= size; i++)
-    {
-      for (int j = -size; j <= size; j++)
-      {
-        if (std::find(alreadyLoad.begin(), alreadyLoad.end(),
-		      std::make_pair(camPos.first + i, camPos.second + j)) == alreadyLoad.end())
-        {
-          // not found so load
-          auto c = std::make_pair(camPos.first + i, camPos.second + j);
-          threadPool.push_back(std::thread(generate_chunk, meshes, seed,
-					   (camPos.first + i)*(chunkZ - 1),
-					   (camPos.second + j)*(chunkX - 1),
-					   chunkZ, chunkX, c, models));
-          alreadyLoad.push_back(c);
-        }
-      }
-    }
-    for (auto& t: threadPool)
-    {
-      t.join();
-    }
-    threadPool.clear();
-    i++;
+	    return;
+	}
 
-    std::this_thread::sleep_for(1s);
-  }
+	g_mutex.lock();
+	glm::vec3 view_pos = cam->get_view_pos();
+	g_mutex.unlock();
+
+	auto camPos = std::make_pair(((int)view_pos.z) / chunkZ, ((int)view_pos.x) / chunkX);
+
+	// Search for chunks out of cam scope
+	for (auto it = alreadyLoad.begin(); it != alreadyLoad.end();)
+	{
+	    if (abs(it->first - camPos.first) > size || abs(it->second - camPos.second) > size)
+	    {
+		g_mutex.lock();
+		unload->push_back(*it);
+		g_mutex.unlock();
+
+		it = alreadyLoad.erase(it);
+	    } else {
+		it++;
+	    }
+	}
+
+	for (int i = -size; i <= size; i++)
+	{
+	    for (int j = -size; j <= size; j++)
+	    {
+		if (std::find(alreadyLoad.begin(), alreadyLoad.end(),
+			      std::make_pair(camPos.first + i, camPos.second + j)) == alreadyLoad.end())
+		{
+		    // not found so load
+		    auto c = std::make_pair(camPos.first + i, camPos.second + j);
+
+		    if (Profiler::multi_thread)
+			threadPool.push_back(std::thread(generate_chunk, meshes, seed,
+							 (camPos.first + i)*(chunkZ - 1),
+							 (camPos.second + j)*(chunkX - 1),
+							 chunkZ, chunkX, c, models));
+		    else
+			generate_chunk(meshes, seed,
+				       (camPos.first + i)*(chunkZ - 1),
+				       (camPos.second + j)*(chunkX - 1),
+				       chunkZ, chunkX, c, models);
+		    alreadyLoad.push_back(c);
+		}
+	    }
+	}
+	for (auto& t: threadPool)
+	{
+	    t.join();
+	}
+	threadPool.clear();
+	i++;
+
+	std::this_thread::sleep_for(1s);
+    }
 }
 
 unsigned int loadCubemap(std::vector<std::string> faces)
@@ -97,7 +133,7 @@ unsigned int loadCubemap(std::vector<std::string> faces)
         {
             glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
                          0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data
-            );
+		);
             stbi_image_free(data);
         }
         else
@@ -159,23 +195,25 @@ int start_opengl()
     // Mesh & Model
     TerrainTexturePack* t_pack =
 	new TerrainTexturePack(new TerrainTexture{load_texturegl("textures/grass.png")},
-			      new TerrainTexture{load_texturegl("textures/Snow.jpg")},
-			      new TerrainTexture{load_texturegl("textures/grassy3.png")},
-			      new TerrainTexture{load_texturegl("textures/rocky.jpg")});
+			       new TerrainTexture{load_texturegl("textures/Snow.jpg")},
+			       new TerrainTexture{load_texturegl("textures/grassy3.png")},
+			       new TerrainTexture{load_texturegl("textures/rocky.jpg")});
 
     std::vector<MeshTerrain*> map_mesh;
     std::vector<MeshTerrain*> meshes;
     std::vector<std::pair<int, int>> unload;
     std::vector<Model*>* models = new std::vector<Model*>
-    {
-      new Model("textures/pine.obj", "textures/pine.png", "", false),
-      new Model("textures/grassModel.obj", "textures/grassTexture.png", "", false),
-      new Model("textures/grassModel.obj", "textures/flower.png", "", false)
-    };
+	{
+	    new Model("textures/pine.obj", "textures/pine.png", "", false),
+	    new Model("textures/grassModel.obj", "textures/grassTexture.png", "", false),
+	    new Model("textures/grassModel.obj", "textures/flower.png", "", false)
+	};
     models->at(1)->set_fake_lighting(true);
     models->at(2)->set_fake_lighting(true);
 
     std::thread t(manage_pool, &meshes, &unload, camera, models);
+    Profiler::init_profiling();
+    std::thread t2(Profiler::get_cpu_usage);
 
     //Light
     Light map_light(glm::vec3(150.0f, 200.0f, 150.0f),
@@ -198,13 +236,13 @@ int start_opengl()
 
     std::vector<std::string> faces
     {
-        "textures/right.jpg",
-        "textures/left.jpg",
-        "textures/top.jpg",
-        "textures/bottom.jpg",
-        "textures/back.jpg",
-        "textures/front.jpg"
-    };
+        "textures/nightRight.png",
+	    "textures/nightLeft.png",
+	    "textures/nightTop.png",
+	    "textures/nightBottom.png",
+	    "textures/nightBack.png",
+	    "textures/nightFront.png"
+	    };
     unsigned int cubemapTexture = loadCubemap(faces);
 
     // Skybox shader + load
@@ -236,38 +274,38 @@ int start_opengl()
 
     while (!glfwWindowShouldClose(window))
     {
-      timer += 0.05f;
+	timer += 0.05f;
 
-      // Process verts
-      g_mutex.lock();
-      for (auto& m: meshes)
-      {
-        m->set_texture_pack(t_pack);
-        m->setup_mesh();
-        m->get_water()->set_texture_pack(t_pack);
-        m->get_water()->setup_mesh();
+	// Process verts
+	g_mutex.lock();
+	for (auto& m: meshes)
+	{
+	    m->set_texture_pack(t_pack);
+	    m->setup_mesh();
+	    m->get_water()->set_texture_pack(t_pack);
+	    m->get_water()->setup_mesh();
 
-        map_mesh.push_back(m);
-      }
-      meshes.clear();
+	    map_mesh.push_back(m);
+	}
+	meshes.clear();
 
-      for (auto& u: unload)
-      {
-        for (auto it = map_mesh.begin(); it != map_mesh.end();)
-        {
-          if ((*it)->get_chunk() == u)
-          {
-            delete *it;
-            it = map_mesh.erase(it);
-            break;
-          } else {
-            it++;
-          }
-        }
-      }
-      unload.clear();
+	for (auto& u: unload)
+	{
+	    for (auto it = map_mesh.begin(); it != map_mesh.end();)
+	    {
+		if ((*it)->get_chunk() == u)
+		{
+		    delete *it;
+		    it = map_mesh.erase(it);
+		    break;
+		} else {
+		    it++;
+		}
+	    }
+	}
+	unload.clear();
 
-      g_mutex.unlock();
+	g_mutex.unlock();
 
     	// per-frame time logic
     	// --------------------
@@ -281,82 +319,60 @@ int start_opengl()
 
     	// render
     	// ------
-    	//glClearColor(149.0f / 255.0f,203.0f / 255.0f, 255.0f / 255.0f, 1.0f);
+
     	glClearColor(0.35f, 0.35f, 0.35f, 1.0f);
     	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     	// activate shader for map mesh ! !
     	glm::mat4 view = camera->get_view_matrix();
     	glm::mat4 projection = glm::perspective(glm::radians(camera->get_zoom()),
-    	    (float)Input::SCR_WIDTH / (float)Input::SCR_HEIGHT, 0.1f, 1000.0f);
+						(float)Input::SCR_WIDTH / (float)Input::SCR_HEIGHT, 0.1f, 1000.0f);
     	glm::vec3 view_pos = camera->get_view_pos();
 
     	// Render terrain
     	TerrainRenderer tr(our_map_shader, projection, view, view_pos, map_light);
-      for (auto mesh: map_mesh)
-      {
-        tr.render(*mesh, t_pack);
-      }
+	for (auto mesh: map_mesh)
+	{
+	    tr.render(*mesh, t_pack);
+	}
 
-      EntityRenderer z(our_model_shader, projection, view, view_pos, map_light);
-      for (auto mesh: map_mesh)
-      {
-        z.render(mesh->get_entities());
-      }
+	EntityRenderer z(our_model_shader, projection, view, view_pos, map_light);
+	for (auto mesh: map_mesh)
+	{
+	    z.render(mesh->get_entities());
+	}
 
     	// Display lamp
-      our_lamp_shader.use();
-      our_lamp_shader.setMat4("projection", projection);
-      our_lamp_shader.setMat4("view", view);
+	our_lamp_shader.use();
+	our_lamp_shader.setMat4("projection", projection);
+	our_lamp_shader.setMat4("view", view);
     	glm::mat4 model;
     	model = glm::translate(model, map_light.get_position());
     	model = glm::scale(model, glm::vec3(3.0f)); // a smaller cube
-      our_lamp_shader.setMat4("model", model);
+	our_lamp_shader.setMat4("model", model);
 
 
     	glBindVertexArray(lightVAO);
     	glDrawArrays(GL_TRIANGLES, 0, 36);
 
-      /*
-      waterShader.use();
-      waterShader.setFloat("time", timer);
-      waterShader.setMat4("projection", projection);
-      waterShader.setMat4("view", view);
-      glm::mat4 model2;
-      model2 = glm::translate(model2, glm::vec3(0.0f, 0.0f, 0.0f));
-      model2 = glm::rotate(model2, glm::radians(0.0f),
-  			glm::vec3(1.0f, 0.0f, 0.0f));
-      waterShader.setMat4("model", model2);
+	glm::mat4 model2;
+	model2 = glm::translate(model2, glm::vec3(0.0f, 0.0f, 0.0f));
+	model2 = glm::rotate(model2, glm::radians(0.0f),
+			     glm::vec3(1.0f, 0.0f, 0.0f));
 
-      // Enable blending
-      glEnable(GL_BLEND);
-      glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-      for (auto mesh: map_mesh)
-      {
-        mesh->get_water()->draw(waterShader);
-      }
-      */
+	reflectiveShader.use();
+	reflectiveShader.setFloat("time", timer);
+	reflectiveShader.setMat4("projection", projection);
+	reflectiveShader.setMat4("view", view);
+	reflectiveShader.setMat4("model", model2);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	for (auto mesh: map_mesh)
+	{
+	    mesh->get_water()->draw(reflectiveShader);
+	}
 
-      glm::mat4 model2;
-      model2 = glm::translate(model2, glm::vec3(0.0f, 0.0f, 0.0f));
-      model2 = glm::rotate(model2, glm::radians(0.0f),
-        glm::vec3(1.0f, 0.0f, 0.0f));
-
-      reflectiveShader.use();
-      reflectiveShader.setFloat("time", timer);
-      reflectiveShader.setMat4("projection", projection);
-      reflectiveShader.setMat4("view", view);
-      reflectiveShader.setMat4("model", model2);
-      glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
-      glEnable(GL_BLEND);
-      glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-      for (auto mesh: map_mesh)
-      {
-        mesh->get_water()->draw(reflectiveShader);
-      }
-
-      //glBindVertexArray(waterVAO);
-    	//glDrawArrays(GL_TRIANGLES, 0, 9);
 
     	// update sun pos
     	auto light_pos = map_light.get_position();
@@ -367,30 +383,49 @@ int start_opengl()
 
     	map_light.set_position(glm::vec3(inc ? light_pos.x + 1 : light_pos.x - 1,
     					 light_pos.y, light_pos.z));
-      //camera->process_keyboard(Camera::Camera_movement::FORWARD, Input::deltaTime * 10.f);
 
-      glDepthFunc(GL_LEQUAL);
-      skyboxShader.use();
-      view = glm::mat4(glm::mat3(camera->get_view_matrix()));
-      skyboxShader.setMat4("view", view);
-      skyboxShader.setMat4("projection", projection);
+	glDepthFunc(GL_LEQUAL);
+	skyboxShader.use();
+	view = glm::mat4(glm::mat3(camera->get_view_matrix()));
+	skyboxShader.setMat4("view", view);
+	skyboxShader.setMat4("projection", projection);
 
-      glBindVertexArray(skyboxVAO);
-      glActiveTexture(GL_TEXTURE0);
-      glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
-      glDrawArrays(GL_TRIANGLES, 0, 36);
-      glBindVertexArray(0);
-      glDepthFunc(GL_LESS);
+	glBindVertexArray(skyboxVAO);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
+	glDrawArrays(GL_TRIANGLES, 0, 36);
+	glBindVertexArray(0);
+	glDepthFunc(GL_LESS);
 
     	glfwSwapBuffers(window);
     	glfwPollEvents();
     }
 
     glfwTerminate();
+
+    t.join();
+    t2.join();
+
+    Profiler::dump_profiling();
     return 0;
 }
 
 int main(int argc, char *argv[])
 {
+    namespace po = boost::program_options;
+
+    po::options_description desc("options");
+
+    desc.add_options()
+	("multi-thread, m", po::bool_switch(&Profiler::multi_thread),
+	 "activate multithreading on chunk generation");
+    po::variables_map vm;
+    store(parse_command_line(argc, argv, desc), vm);
+    notify(vm);
+    // if (vm.count("multi-thread"))
+    // {
+    // 	Profiler::multi_thread = true;
+    // }
+
     return start_opengl();
 }

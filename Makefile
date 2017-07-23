@@ -1,8 +1,8 @@
 CXX = g++
-CXXFLAGS = -Wall -std=c++14 -pedantic -O3
+CXXFLAGS = -Wall -std=c++14 -pedantic  -g
 LDFLAGS = -lGLEW -lglfw3 -lGL -lm -ldl -lXinerama \
 	-lXrandr -lXi -lXcursor -lX11 -lXxf86vm -lpthread -lSDL2main -lSDL2 \
-	-lglut -lSDL2_image -lGL -lGLU -lassimp
+	-lglut -lSDL2_image -lGL -lGLU -lassimp -ltbb -lboost_filesystem -lboost_program_options
 
 DIR = src
 SOURCE = \
@@ -21,6 +21,7 @@ SOURCE = \
 	$(DIR)/mesh-texture.cc		\
 	$(DIR)/light.cc			\
 	$(DIR)/terrain-renderer.cc      \
+	$(DIR)/profiler.cc              \
 	$(DIR)/main.cc
 
 INC_DIR = inc/
