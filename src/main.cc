@@ -418,10 +418,17 @@ int main(int argc, char *argv[])
 
     desc.add_options()
 	("multi-thread, m", po::bool_switch(&Profiler::multi_thread),
-	 "activate multithreading on chunk generation");
+	 "activate multithreading on chunk generation")
+	("chunk", po::value<int>(), "set chunk size");
     po::variables_map vm;
     store(parse_command_line(argc, argv, desc), vm);
     notify(vm);
+    if (vm.count("chunk"))
+    {
+	chunkZ = vm["chunk"].as<int>();
+	chunkX = vm["chunk"].as<int>();
+    }
+
     // if (vm.count("multi-thread"))
     // {
     // 	Profiler::multi_thread = true;
